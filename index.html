@@ -117,22 +117,7 @@ h1 .dim{color:var(--muted2)}
 .search-hint b{color:var(--muted)}
 
 /* dropdown sugerencias */
-.suggest{
-  position:absolute;top:calc(100% + 8px);left:0;right:0;
-  background:var(--panel2);border:1px solid var(--line);border-radius:14px;
-  overflow:hidden;z-index:30;max-height:320px;overflow-y:auto;
-  box-shadow:0 24px 60px rgba(0,0,0,.6);
-}
-.suggest-item{
-  padding:13px 18px;cursor:pointer;display:flex;justify-content:space-between;
-  align-items:center;gap:12px;border-bottom:1px solid var(--line);
-  transition:background .12s;
-}
-.suggest-item:last-child{border-bottom:0}
-.suggest-item:hover{background:var(--pink-dim)}
-.si-name{font-size:14.5px;font-weight:500}
-.si-meta{font-size:12px;color:var(--muted);margin-top:2px}
-.si-rut{font-family:'Oswald';letter-spacing:.06em;color:var(--muted);font-size:13px;flex-shrink:0}
+
 
 /* ── MAIN CONTENT ── */
 main{max-width:980px;margin:0 auto;padding:40px 28px 80px}
@@ -287,7 +272,7 @@ footer strong{color:var(--muted)}
     <div class="eyebrow">Portal del apoderado</div>
     <h1>Ficha de<br>tu <em>jugador</em></h1>
     <p class="subtitle">
-      Ingresa el <strong>RUT o nombre</strong> de tu hijo/a para ver su ficha completa:
+      Ingresa el <strong>RUT</strong> de tu hijo/a para ver su ficha completa:
       asistencia, evaluaciones físicas, minutaje y más.
       Puedes descargarla en PDF.
     </p>
@@ -296,11 +281,10 @@ footer strong{color:var(--muted)}
       <div class="search-box">
         <span class="search-ico">⌕</span>
         <input id="q" type="text"
-          placeholder="RUT o nombre del jugador…"
+          placeholder="Ej: 24.073.947-K"
           autocomplete="off" spellcheck="false" disabled>
         <button class="btn-search" id="go" disabled>Buscar</button>
       </div>
-      <div class="suggest" id="suggest" style="display:none"></div>
       <p class="search-hint" id="hint">Cargando base de jugadores…</p>
     </div>
   </div>
@@ -515,15 +499,7 @@ function setV(id,v,suf=''){
   }
 }
 function findRut(s){const k=norm(s);if(!k)return null;return PLAYERS.find(p=>p.key===k)||(k.length>=7?PLAYERS.find(p=>p.key.startsWith(k)):null)||null;}
-function suggest(s){
-  const t=noAcc(s.trim());if(t.length<2)return[];
-  const k=norm(s);
-  const br=k.length>=3?PLAYERS.filter(p=>p.key.includes(k)):[];
-  const bn=PLAYERS.filter(p=>noAcc(p.nombre).includes(t));
-  const seen=new Set(),out=[];
-  for(const p of[...br,...bn]){if(!seen.has(p.key)){seen.add(p.key);out.push(p);}}
-  return out.slice(0,8);
-}
+
 
 function show(p){
   current=p;
@@ -551,33 +527,14 @@ function show(p){
 function notFound(){current=null;$('ficha').classList.remove('show');$('empty').classList.add('show');}
 function doSearch(){
   const v=$('q').value.trim(); if(!v) return;
-  const p=findRut(v); if(p){show(p);return;}
-  const s=suggest(v);
-  if(s.length===1) show(s[0]);
-  else if(s.length>1) showSuggest(s);
+  const p=findRut(v);
+  if(p) show(p);
   else notFound();
 }
-function showSuggest(list){
-  const box=$('suggest');
-  box.innerHTML=list.map(p=>`
-    <div class="suggest-item" data-k="${p.key}">
-      <div><div class="si-name">${p.nombre}</div>
-      <div class="si-meta">${[p.sede,p.cat].filter(Boolean).join(' · ')}</div></div>
-      <span class="si-rut">${p.rut}</span>
-    </div>`).join('');
-  box.style.display='block';
-  box.querySelectorAll('.suggest-item').forEach(el=>{
-    el.onclick=()=>{const p=PLAYERS.find(x=>x.key===el.dataset.k);$('q').value=p.rut;show(p);};
-  });
-}
+
 $('go').onclick=doSearch;
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
-$('q').addEventListener('input',e=>{
-  const v=e.target.value.trim();
-  if(v.length>=2){const s=suggest(v);if(s.length)showSuggest(s);else $('suggest').style.display='none';}
-  else $('suggest').style.display='none';
-});
-document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))$('suggest').style.display='none';});
+
 $('clear').onclick=()=>{
   $('q').value='';$('ficha').classList.remove('show');$('empty').classList.remove('show');
   $('q').focus();window.scrollTo({top:0,behavior:'smooth'});
