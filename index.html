@@ -633,7 +633,7 @@ footer strong{color:var(--muted)}
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbz8DVZNAPsM1BpVcr-YaSdvD2kUXXk47v4diONUxGGclNWYZFbEO7p9HOSEEpcQaN6k/exec';
-const API_PLAN = 'https://script.google.com/macros/s/AKfycbwYI92WqEG8qTMGXNERkd4A7NNilVi0ORKS-6D8qRk6hDRF3y6nfIE25Rta9CMv-A1R/exec';
+const API_PLAN = 'https://script.google.com/macros/s/AKfycbwlC3I2zGlD78tladfjP7DgjFfVdLctbFREi_cQpzYrrfaZ2RuHCAShgHuF2Bfg2geZ/exec';
 
 // días de entrenamiento por sede+categoría (0=Dom,1=Lun,2=Mar,3=Mié,4=Jue,5=Vie,6=Sáb)
 const HORARIOS = {
@@ -1103,7 +1103,7 @@ function renderPlan(sede, cat){
     const fechaObj = new Date(now.getFullYear(), mesIdx, dia);
     const esHoy = mejorDelta === 0;
     const tipoEnt = String(mejor[5]).trim().toUpperCase();
-    const linkPDF = String(mejor[6]).trim();
+    const linkPDF = String(mejor[7]||'').trim();
     
     // badge de tipo
     let tipoCls = 'tipo-fuerza', tipoIcon = '⚡';
@@ -1121,7 +1121,7 @@ function renderPlan(sede, cat){
     html += '<div class="plan-fecha">'+fechaLabel+'</div>';
     html += '</div>';
     
-    if(linkPDF && linkPDF.startsWith('http')){
+    if(linkPDF && (linkPDF.startsWith('http')||linkPDF.startsWith('https'))){
       // Convertir link de Google Drive a link de vista directa
       let pdfUrl = linkPDF;
       const driveMatch = linkPDF.match(/\/d\/([a-zA-Z0-9_-]+)/);
