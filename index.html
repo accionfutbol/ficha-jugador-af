@@ -758,7 +758,7 @@ async function load(){
     $('loader').classList.remove('show');
     $('hint').innerHTML = `<b>${PLAYERS.length.toLocaleString('es-CL')}</b> jugadores registrados`;
     $('q').disabled=false; $('go').disabled=false;
-    $('q').placeholder='Ej: 24.073.947-K o Abraham Fuentes';
+    $('q').placeholder='Ej: 24.073.947-K';
     setStatus('live');
   }catch(e){
     $('loader').classList.remove('show');
@@ -1054,10 +1054,11 @@ function renderPlan(sede, cat){
   const MESES_IDX = {ENERO:0,FEBRERO:1,MARZO:2,ABRIL:3,MAYO:4,JUNIO:5,JULIO:6,AGOSTO:7,SEPTIEMBRE:8,OCTUBRE:9,NOVIEMBRE:10,DICIEMBRE:11};
   
   // Filtrar filas por sede y categoría (normalizado)
+  const normStr = s => String(s||'').trim().toUpperCase().replace(/\s+/g,' ');
   const filas = PLAN_DATA.filter(r => {
-    const rSede = String(r[0]).trim().toUpperCase();
-    const rCat  = String(r[2]).trim().toUpperCase();
-    return rSede === sede.toUpperCase() && rCat === cat.toUpperCase();
+    const rSede = normStr(r[0]);
+    const rCat  = normStr(r[2]);
+    return rSede === normStr(sede) && rCat === normStr(cat);
   });
 
   // Encontrar sesión más próxima (hoy o futuro)
