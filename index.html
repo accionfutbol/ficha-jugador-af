@@ -1048,7 +1048,7 @@ function renderPlan(keyVal){
   const now  = new Date();
   const hoy0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const key  = keyVal.trim().toUpperCase();
-  const cols = COL_PLAN[key];  // [colTipo, colLink]
+  const cols = COL_PLAN[key];
   const dias = HORARIOS[key] || [];
 
   if(!cols){
@@ -1057,7 +1057,7 @@ function renderPlan(keyVal){
   }
   const [colTipo, colLink] = cols;
 
-  // col0=FECHA ("LUNES 01"), col1=MES ("JUNIO"), colTipo=tipo, colLink=link
+  // Parsear fila: extraer dia, mes, tipo y link para esta categoría
   function parseFila(r){
     const fechaStr = String(r[0]||'').trim().toUpperCase();
     const mesStr   = String(r[1]||'').trim().toUpperCase();
@@ -1067,16 +1067,25 @@ function renderPlan(keyVal){
     if(!diaMatch || !mesStr) return null;
     const dia    = parseInt(diaMatch[1]);
     const mesIdx = MESES_NOMBRE[mesStr];
-    if(mesIdx === undefined || !link || !link.startsWith('http')) return null;
+    if(mesIdx === undefined) return null;
+    // Aceptar filas con link O con tipo (aunque link esté vacío)
+    if(!link && !tipo) return null;
     return {dia, mesIdx, tipo, link, fecha: new Date(now.getFullYear(), mesIdx, dia)};
   }
 
-  // Sesión más próxima (hoy o futuro) y más reciente pasada
+  // Solo filas con link válido para buscar sesión
+  function parseFilaConLink(r){
+    const p = parseFila(r);
+    if(!p || !p.link || !p.link.startsWith('http')) return null;
+    return p;
+  }
+
+  // Sesión más próxima con link
   let mejor = null, mejorDelta = Infinity;
   let pasado = null, pasadoDelta = Infinity;
 
   PLAN_DATA.forEach(r => {
-    const p = parseFila(r);
+    const p = parseFilaConLink(r);
     if(!p) return;
     const delta = p.fecha - hoy0;
     if(delta >= 0 && delta < mejorDelta){ mejorDelta = delta; mejor = p; }
@@ -1085,20 +1094,32 @@ function renderPlan(keyVal){
 
   const sesion = mejor || pasado;
 
-  // Próximos 3 entrenamientos según horario
+  // Verificar si HOY tiene entrenamiento según horario
+  const esHoyDiaEntrenamiento = dias.includes(hoy0.getDay());
+
+  // Próximos 3 días de entrenamiento
   const proximos = [];
   for(let i=0; i<21 && proximos.length<3; i++){
     const d = new Date(hoy0); d.setDate(hoy0.getDate()+i);
     if(dias.includes(d.getDay())){
       const fila = PLAN_DATA.find(r => {
-        const p = parseFila(r);
+        const p = parseFilaConLink(r);
         return p && p.fecha.getTime() === d.getTime();
       });
-      proximos.push({fecha:d, tipo: fila ? String(fila[colTipo]||'').trim() : ''});
+      proximos.push({
+        fecha: d,
+        tipo:  fila ? fila[colTipo] : '',
+        link:  fila ? fila[colLink] : ''
+      });
     }
   }
 
-  // Estilo según tipo
+  // Si hoy NO es día de entrenamiento → mostrar aviso
+  if(!esHoyDiaEntrenamiento && !sesion){
+    const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const diasLabel = dias.map(d => dayNames[d]).join(', ');
+  }
+
   function estiloTipo(tipo){
     const t = (tipo||'').toUpperCase();
     if(t.includes('ESPACIO')||t.includes('REDUCIDO'))
@@ -1107,7 +1128,7 @@ function renderPlan(keyVal){
       return {cls:'tipo-circuito', icon:'🔄', label: tipo||'CIRCUITO TÉCNICO TÁCTICO'};
     if(t.includes('FUERZA')||t.includes('FUTBOL'))
       return {cls:'tipo-fuerza', icon:'⚡', label: tipo||'FUERZA + FÚTBOL 11'};
-    return {cls:'tipo-fuerza', icon:'⚡', label: tipo||'FUERZA + FÚTBOL 11'};
+    return null; // sin tipo reconocido
   }
 
   function pdfUrl(link){
@@ -1124,7 +1145,7 @@ function renderPlan(keyVal){
     const fechaLabel = esHoy
       ? 'Hoy, '+sesion.dia+' de '+MESES_ES[sesion.mesIdx]
       : DIAS_ES[sesion.fecha.getDay()]+' '+sesion.dia+' de '+MESES_ES[sesion.mesIdx];
-    const tipo = estiloTipo(sesion.tipo);
+    const tipo = estiloTipo(sesion.tipo) || {cls:'tipo-fuerza', icon:'📋', label: sesion.tipo||'Ver planificación'};
 
     html += '<div class="plan-card">';
     html += '<div class="plan-header">';
@@ -1142,19 +1163,36 @@ function renderPlan(keyVal){
     html += '<p>No hay planificaciones cargadas aún para esta sede y categoría.</p></div>';
   }
 
+  // Próximos entrenamientos
   if(proximos.length){
     html += '<div class="plan-upcoming" style="margin-top:18px">';
     html += '<div class="plan-upcoming-title">Próximos entrenamientos</div>';
     proximos.forEach(p => {
       const delta = Math.round((p.fecha - hoy0)/(1000*60*60*24));
       const label = delta===0?'Hoy':delta===1?'Mañana':DIAS_ES[p.fecha.getDay()]+' '+p.fecha.getDate();
-      const est   = estiloTipo(p.tipo);
+      const tienePlan = p.link && p.link.startsWith('http');
+      const est = estiloTipo(p.tipo);
+
       html += '<div class="plan-upcoming-item">';
       html += '<span class="plan-upcoming-day">'+label+'</span>';
-      html += '<span class="plan-upcoming-tipo '+est.cls+'">'+est.label+'</span>';
+      if(tienePlan && est){
+        html += '<span class="plan-upcoming-tipo '+est.cls+'">'+est.label+'</span>';
+      } else if(tienePlan){
+        html += '<span class="plan-upcoming-tipo tipo-fuerza">Ver PDF</span>';
+      } else {
+        html += '<span class="plan-upcoming-tipo" style="color:var(--muted2);border-color:var(--line)">SIN PLANIFICACIÓN CARGADA</span>';
+      }
       html += '</div>';
     });
     html += '</div>';
+  }
+
+  // Aviso si hoy no hay entrenamiento
+  if(!esHoyDiaEntrenamiento){
+    const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const diasLabel = dias.map(d => dayNames[d]).join(', ');
+    html += '<div style="margin-top:14px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 18px;font-size:13px;color:var(--muted);text-align:center">';
+    html += '📆 Hoy no hay entrenamiento · Días de entrenamiento: <strong style="color:var(--ink)">'+diasLabel+'</strong></div>';
   }
 
   $('plan-result').innerHTML = html;
