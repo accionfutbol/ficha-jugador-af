@@ -400,6 +400,26 @@ footer strong{color:var(--muted)}
 .plan-upcoming-day{color:var(--muted)}
 .plan-upcoming-tipo{font-family:'Oswald',sans-serif;letter-spacing:.06em;font-size:12px}
 
+
+/* ── avatar / foto jugador ── */
+.ficha-header{position:relative}
+.fh-avatar-wrap{
+  display:flex;align-items:center;gap:16px;width:100%;
+}
+.fh-avatar{
+  width:72px;height:72px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--pink),var(--pink-deep));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Oswald',sans-serif;font-weight:700;font-size:26px;color:#fff;
+  border:2px solid rgba(255,255,255,.12);box-shadow:0 6px 20px rgba(255,46,147,.3);
+  overflow:hidden;
+}
+.fh-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.fh-name-block{flex:1;min-width:0}
+@media(max-width:600px){
+  .fh-avatar{width:58px;height:58px;font-size:20px}
+}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -489,9 +509,14 @@ footer strong{color:var(--muted)}
   <!-- FICHA -->
   <div class="ficha" id="ficha">
     <div class="ficha-header">
-      <div class="fh-name">
-        <h2 id="p-nombre"></h2>
-        <div class="rut" id="p-rut"></div>
+      <div class="fh-avatar-wrap">
+        <div class="fh-avatar" id="p-avatar"></div>
+        <div class="fh-name-block">
+          <div class="fh-name">
+            <h2 id="p-nombre"></h2>
+            <div class="rut" id="p-rut"></div>
+          </div>
+        </div>
       </div>
       <div class="fh-tags" id="p-tags"></div>
     </div>
@@ -673,7 +698,7 @@ const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agos
 const MESES_NOMBRE = {ENERO:0,FEBRERO:1,MARZO:2,ABRIL:3,MAYO:4,JUNIO:5,JULIO:6,AGOSTO:7,SEPTIEMBRE:8,OCTUBRE:9,NOVIEMBRE:10,DICIEMBRE:11};
 
 const C = {rut:0,nombre:1,nac:6,edad:8,sede:9,tipo:10,cat:11,pos:20,pie:21,torneo:45,part:46,min:47,
-           salto:53,saltoEst:54,vel30:55,velEst:56,ift:57,iftEst:58,altura:59,peso:60,imc:61,gc:62,mm:63};
+           salto:53,saltoEst:54,vel30:55,velEst:56,ift:57,iftEst:58,altura:59,peso:60,imc:61,gc:62,mm:63,foto:72};
 const MES_BASE = 28;
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -760,7 +785,7 @@ async function load(){
       for(let m=0;m<12;m++) months[m]=num(r[MES_BASE+m]);
       out.push({rut,nombre,nac:fdate(r[C.nac]),edad:num(r[C.edad]),
         sede:clean(r[C.sede]),cat:clean(r[C.cat]),pos:clean(r[C.pos]),pie:clean(r[C.pie]),
-        torneo:clean(r[C.torneo]),
+        torneo:clean(r[C.torneo]),foto:clean(r[C.foto]),
         part:num(r[C.part]),min:num(r[C.min]),
         salto:num(r[C.salto]),saltoEst:clean(r[C.saltoEst]),
         vel30:num(r[C.vel30]),velEst:clean(r[C.velEst]),
@@ -854,11 +879,39 @@ function setV(id,v,suf=''){
 function findRut(s){const k=norm(s);if(!k)return null;return PLAYERS.find(p=>p.key===k)||(k.length>=7?PLAYERS.find(p=>p.key.startsWith(k)):null)||null;}
 
 
+function getInitials(nombre){
+  const parts = (nombre||'').trim().split(/\s+/);
+  if(parts.length===0) return '?';
+  if(parts.length===1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0)+parts[1].charAt(0)).toUpperCase();
+}
+
+function driveImgUrl(link){
+  const m = (link||'').match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if(m) return 'https://lh3.googleusercontent.com/d/'+m[1]+'=w400';
+  return link;
+}
+
+function setAvatar(p){
+  const el = $('p-avatar');
+  const initials = getInitials(p.nombre);
+  if(p.foto && p.foto.startsWith('http')){
+    const url = driveImgUrl(p.foto);
+    el.innerHTML = '<img src="'+url+'" alt="'+p.nombre+'">';
+    const img = el.querySelector('img');
+    img.onerror = function(){ el.innerHTML = initials; };
+  } else {
+    el.innerHTML = initials;
+  }
+}
+
 function show(p){
   current=p;
   $('p-nombre').textContent=p.nombre;
   $('p-rut').textContent='RUT '+p.rut;
   $('p-tags').innerHTML=[p.sede,p.cat].filter(Boolean).map(t=>`<span class="tag">${t}</span>`).join('');
+  // Avatar / foto
+  setAvatar(p);
   // Torneo
   $('p-torneo').innerHTML = torneoBadge(p.torneo);
   setV('p-nac',p.nac); setV('p-edad',p.edad,p.edad?' años':'');
@@ -904,8 +957,25 @@ $('clear').onclick=()=>{
 
 /* ── PDF ── */
 const v=x=>(x===''||x==null)?'—':String(x);
-$('pdf').onclick=()=>{
+async function fetchImageAsDataUrl(url){
+  try{
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve,reject)=>{
+      const reader = new FileReader();
+      reader.onloadend = ()=>resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch(e){ return null; }
+}
+
+$('pdf').onclick=async ()=>{
   if(!current)return;
+  const btn = $('pdf');
+  const originalText = btn.textContent;
+  btn.textContent = 'Generando…'; btn.disabled = true;
+  try{
   const p=current;const{jsPDF}=window.jspdf;
   const doc=new jsPDF({unit:'mm',format:'a4'});
   const W=210,M=16;
@@ -925,19 +995,43 @@ $('pdf').onclick=()=>{
   doc.setTextColor(160,160,168);doc.setFontSize(8);doc.text(hoy,W-M,14,{align:'right'});
   doc.text('Portal del Apoderado',W-M,21,{align:'right'});
 
+  // foto jugador (circular) junto al nombre
+  let nameX = M;
+  if(p.foto && p.foto.startsWith('http')){
+    const dataUrl = await fetchImageAsDataUrl(driveImgUrl(p.foto));
+    if(dataUrl){
+      try{
+        const fmt = dataUrl.includes('image/png') ? 'PNG' : 'JPEG';
+        // clip circular vía canvas
+        const img = new Image();
+        await new Promise(res=>{ img.onload=res; img.src=dataUrl; });
+        const size=200;
+        const cnv=document.createElement('canvas'); cnv.width=size; cnv.height=size;
+        const ctx=cnv.getContext('2d');
+        ctx.beginPath(); ctx.arc(size/2,size/2,size/2,0,Math.PI*2); ctx.closePath(); ctx.clip();
+        const ratio=Math.max(size/img.width, size/img.height);
+        const nw=img.width*ratio, nh=img.height*ratio;
+        ctx.drawImage(img,(size-nw)/2,(size-nh)/2,nw,nh);
+        const circDataUrl = cnv.toDataURL('image/png');
+        doc.addImage(circDataUrl,'PNG',M,45,22,22);
+        nameX = M+26;
+      }catch(e){}
+    }
+  }
+
   // nombre + chips
   let y=50;
-  doc.setTextColor(...INK);doc.setFont('helvetica','bold');doc.setFontSize(24);
-  doc.text(p.nombre.toUpperCase(),M,y);y+=8;
+  doc.setTextColor(...INK);doc.setFont('helvetica','bold');doc.setFontSize(nameX>M?18:24);
+  doc.text(p.nombre.toUpperCase(),nameX,y);y+=8;
   doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(...DEEP);
-  doc.text('RUT '+p.rut,M,y);
-  let cx=M;const chipY=y+7;
+  doc.text('RUT '+p.rut,nameX,y);
+  let cx=nameX;const chipY=y+7;
   [p.sede,p.cat].filter(Boolean).forEach(c=>{
     const w=doc.getTextWidth(c.toUpperCase())+9;
     doc.setFillColor(255,220,240);doc.roundedRect(cx,chipY-4.5,w,7,3,3,'F');
     doc.setFontSize(8);doc.setTextColor(...DEEP);doc.text(c.toUpperCase(),cx+4.5,chipY);cx+=w+5;
   });
-  y=chipY+12;
+  y=Math.max(chipY+12, 50+26+4);
 
   function sec(title,rows){
     // título
@@ -991,6 +1085,9 @@ $('pdf').onclick=()=>{
 
   const safe=p.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'_');
   doc.save(`Ficha_${safe}.pdf`);
+  } finally {
+    btn.textContent = originalText; btn.disabled = false;
+  }
 };
 
 
