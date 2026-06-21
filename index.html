@@ -420,6 +420,20 @@ footer strong{color:var(--muted)}
   .fh-avatar{width:58px;height:58px;font-size:20px}
 }
 
+
+/* ── bloqueo por morosidad ── */
+.morosidad-block{
+  text-align:center;padding:60px 28px;max-width:560px;margin:0 auto;
+  animation:rise .4s cubic-bezier(.22,1,.36,1);
+}
+.morosidad-block .ico{font-size:54px;margin-bottom:20px}
+.morosidad-block h2{
+  font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;
+  font-size:24px;color:#ffb020;margin-bottom:14px;letter-spacing:.02em;
+}
+.morosidad-block p{color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:8px}
+.morosidad-block .sub{font-size:13px;color:var(--muted2);margin-top:18px}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -600,6 +614,13 @@ footer strong{color:var(--muted)}
     <p><strong>No se encontró ningún jugador</strong><br>
     Verifica el RUT (con o sin puntos y guion) o prueba buscando por nombre.</p>
   </div>
+
+  <div class="morosidad-block" id="morosidad" style="display:none">
+    <div class="ico">⚠️</div>
+    <h2>Por morosidad</h2>
+    <p>Favor comunicarse vía WhatsApp en el grupo del jugador con contabilidad.</p>
+    <p class="sub">El acceso a la ficha se restablece automáticamente al regularizar el pago.</p>
+  </div>
 </main>
 
 <footer>
@@ -698,7 +719,8 @@ const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agos
 const MESES_NOMBRE = {ENERO:0,FEBRERO:1,MARZO:2,ABRIL:3,MAYO:4,JUNIO:5,JULIO:6,AGOSTO:7,SEPTIEMBRE:8,OCTUBRE:9,NOVIEMBRE:10,DICIEMBRE:11};
 
 const C = {rut:0,nombre:1,nac:6,edad:8,sede:9,tipo:10,cat:11,pos:20,pie:21,torneo:45,part:46,min:47,
-           salto:53,saltoEst:54,vel30:55,velEst:56,ift:57,iftEst:58,altura:59,peso:60,imc:61,gc:62,mm:63,foto:72};
+           salto:53,saltoEst:54,vel30:55,velEst:56,ift:57,iftEst:58,altura:59,peso:60,imc:61,gc:62,mm:63,foto:72,
+           pagoMens:4,nMor:5};
 const MES_BASE = 28;
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -786,6 +808,7 @@ async function load(){
       out.push({rut,nombre,nac:fdate(r[C.nac]),edad:num(r[C.edad]),
         sede:clean(r[C.sede]),cat:clean(r[C.cat]),pos:clean(r[C.pos]),pie:clean(r[C.pie]),
         torneo:clean(r[C.torneo]),foto:clean(r[C.foto]),
+        pagoMens:clean(r[C.pagoMens]),nMor:num(r[C.nMor]),
         part:num(r[C.part]),min:num(r[C.min]),
         salto:num(r[C.salto]),saltoEst:clean(r[C.saltoEst]),
         vel30:num(r[C.vel30]),velEst:clean(r[C.velEst]),
@@ -934,17 +957,34 @@ function show(p){
   setV('p-altura',p.altura,p.altura?' m':''); setV('p-peso',p.peso,p.peso?' kg':'');
   setV('p-imc',p.imc); setV('p-gc',p.gc,p.gc?' %':''); setV('p-mm',p.mm,p.mm?' %':'');
   $('empty').classList.remove('show');
+  $('morosidad').style.display='none';
   $('ficha').classList.add('show');
   $('ficha').scrollIntoView({behavior:'smooth',block:'start'});
   // Gráfica
   setTimeout(()=>renderChart(p), 100);
 }
-function notFound(){current=null;$('ficha').classList.remove('show');$('empty').classList.add('show');}
+function notFound(){current=null;$('ficha').classList.remove('show');$('morosidad').style.display='none';$('empty').classList.add('show');}
+
+function isMoroso(p){
+  const pago = (p.pagoMens||'').toUpperCase().trim();
+  const n = parseInt(p.nMor) || 0;
+  return pago === 'MOROSO' && n >= 3;
+}
+
+function showMorosidad(){
+  current=null;
+  $('ficha').classList.remove('show');
+  $('empty').classList.remove('show');
+  $('morosidad').style.display='block';
+  $('morosidad').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
 function doSearch(){
   const v=$('q').value.trim(); if(!v) return;
   const p=findRut(v);
-  if(p) show(p);
-  else notFound();
+  if(!p){ notFound(); return; }
+  if(isMoroso(p)){ showMorosidad(); return; }
+  show(p);
 }
 
 $('go').onclick=doSearch;
@@ -952,6 +992,7 @@ $('q').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
 
 $('clear').onclick=()=>{
   $('q').value='';$('ficha').classList.remove('show');$('empty').classList.remove('show');
+  $('morosidad').style.display='none';
   $('q').focus();window.scrollTo({top:0,behavior:'smooth'});
 };
 
