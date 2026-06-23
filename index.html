@@ -495,7 +495,7 @@ footer strong{color:var(--muted)}
       <div class="search-box">
         <span class="search-ico">⌕</span>
         <input id="q" type="text"
-          placeholder="Ej: 24.073.947-K"
+          placeholder="Ej: 22.123.456-7"
           autocomplete="off" spellcheck="false" disabled>
         <button class="btn-search" id="go" disabled>Buscar</button>
       </div>
@@ -826,7 +826,7 @@ async function load(){
     $('loader').classList.remove('show');
     $('hint').innerHTML = `<b>${PLAYERS.length.toLocaleString('es-CL')}</b> jugadores registrados`;
     $('q').disabled=false; $('go').disabled=false;
-    $('q').placeholder='Ej: 24.073.947-K';
+    $('q').placeholder='Ej: 22.123.456-7';
     setStatus('live');
   }catch(e){
     $('loader').classList.remove('show');
