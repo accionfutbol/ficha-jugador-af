@@ -421,7 +421,7 @@ footer strong{color:var(--muted)}
 }
 
 
-/* ── bloqueo por morosidad sobre 3 cuotas ── */
+/* ── bloqueo por morosidad ── */
 .morosidad-block{
   text-align:center;padding:60px 28px;max-width:560px;margin:0 auto;
   animation:rise .4s cubic-bezier(.22,1,.36,1);
@@ -433,6 +433,26 @@ footer strong{color:var(--muted)}
 }
 .morosidad-block p{color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:8px}
 .morosidad-block .sub{font-size:13px;color:var(--muted2);margin-top:18px}
+
+
+/* ── navegación semana ── */
+.plan-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.plan-nav-btn{
+  width:42px;height:42px;border-radius:50%;border:1.5px solid var(--line);
+  background:var(--panel2);color:var(--ink);font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:border-color .15s,background .15s;
+}
+.plan-nav-btn:hover{border-color:var(--pink);background:var(--pink-dim)}
+.plan-nav-btn:disabled{opacity:.3;cursor:not-allowed}
+.plan-nav-btn:disabled:hover{border-color:var(--line);background:var(--panel2)}
+.plan-nav-center{text-align:center;flex:1}
+.plan-nav-semana{font-family:'Oswald',sans-serif;letter-spacing:.1em;font-size:13px;color:var(--muted);text-transform:uppercase}
+.plan-nav-count{font-size:12px;color:var(--muted2);margin-top:2px}
+.plan-no-entrena{
+  margin-top:14px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:12px;padding:14px 18px;font-size:13px;color:var(--muted);text-align:center
+}
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -617,7 +637,7 @@ footer strong{color:var(--muted)}
 
   <div class="morosidad-block" id="morosidad" style="display:none">
     <div class="ico">⚠️</div>
-    <h2>Por morosidad sobre 3 cuotas</h2>
+    <h2>Por morosidad sobre 3 meses</h2>
     <p>Favor comunicarse vía WhatsApp en el grupo del jugador con contabilidad.</p>
     <p class="sub">El acceso a la ficha se restablece automáticamente al regularizar el pago.</p>
   </div>
@@ -1195,8 +1215,7 @@ function renderPlan(keyVal){
   }
   const [colTipo, colLink] = cols;
 
-  // Parsear fila: extraer dia, mes, tipo y link para esta categoría
-  function parseFila(r){
+  function parseFilaConLink(r){
     const fechaStr = String(r[0]||'').trim().toUpperCase();
     const mesStr   = String(r[1]||'').trim().toUpperCase();
     const tipo     = String(r[colTipo]||'').trim();
@@ -1205,58 +1224,35 @@ function renderPlan(keyVal){
     if(!diaMatch || !mesStr) return null;
     const dia    = parseInt(diaMatch[1]);
     const mesIdx = MESES_NOMBRE[mesStr];
-    if(mesIdx === undefined) return null;
-    // Aceptar filas con link O con tipo (aunque link esté vacío)
-    if(!link && !tipo) return null;
+    if(mesIdx === undefined || !link || !link.startsWith('http')) return null;
     return {dia, mesIdx, tipo, link, fecha: new Date(now.getFullYear(), mesIdx, dia)};
   }
 
-  // Solo filas con link válido para buscar sesión
-  function parseFilaConLink(r){
-    const p = parseFila(r);
-    if(!p || !p.link || !p.link.startsWith('http')) return null;
-    return p;
-  }
-
-  // Sesión más próxima con link
-  let mejor = null, mejorDelta = Infinity;
-  let pasado = null, pasadoDelta = Infinity;
-
-  PLAN_DATA.forEach(r => {
-    const p = parseFilaConLink(r);
-    if(!p) return;
-    const delta = p.fecha - hoy0;
-    if(delta >= 0 && delta < mejorDelta){ mejorDelta = delta; mejor = p; }
-    if(delta < 0  && Math.abs(delta) < pasadoDelta){ pasadoDelta = Math.abs(delta); pasado = p; }
-  });
-
-  const sesion = mejor || pasado;
-
-  // Verificar si HOY tiene entrenamiento según horario
-  const esHoyDiaEntrenamiento = dias.includes(hoy0.getDay());
-
-  // Próximos 3 días de entrenamiento
-  const proximos = [];
-  for(let i=0; i<21 && proximos.length<3; i++){
+  // Recopilar días de entrenamiento en rango -7 / +7 días
+  const sesiones = [];
+  for(let i = -7; i <= 7; i++){
     const d = new Date(hoy0); d.setDate(hoy0.getDate()+i);
-    if(dias.includes(d.getDay())){
-      const fila = PLAN_DATA.find(r => {
-        const p = parseFilaConLink(r);
-        return p && p.fecha.getTime() === d.getTime();
-      });
-      proximos.push({
-        fecha: d,
-        tipo:  fila ? fila[colTipo] : '',
-        link:  fila ? fila[colLink] : ''
-      });
-    }
+    if(!dias.includes(d.getDay())) continue;
+    const fila = PLAN_DATA.find(r => {
+      const p = parseFilaConLink(r);
+      return p && p.fecha.getTime() === d.getTime();
+    });
+    sesiones.push({
+      fecha: d,
+      tipo:  fila ? String(fila[colTipo]||'').trim() : '',
+      link:  fila ? String(fila[colLink]||'').trim() : '',
+      tienePlan: !!fila
+    });
   }
 
-  // Si hoy NO es día de entrenamiento → mostrar aviso
-  if(!esHoyDiaEntrenamiento && !sesion){
-    const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-    const diasLabel = dias.map(d => dayNames[d]).join(', ');
+  if(!sesiones.length){
+    $('plan-result').innerHTML = '<div class="plan-empty"><div class="big-ico">📅</div><p>No hay entrenamientos configurados para esta categoría.</p></div>';
+    return;
   }
+
+  // Índice inicial: el más cercano a hoy (delta mínimo ≥ 0, o el último si todos pasaron)
+  let idxActual = sesiones.findIndex(s => s.fecha >= hoy0);
+  if(idxActual < 0) idxActual = sesiones.length - 1;
 
   function estiloTipo(tipo){
     const t = (tipo||'').toUpperCase();
@@ -1266,7 +1262,7 @@ function renderPlan(keyVal){
       return {cls:'tipo-circuito', icon:'🔄', label: tipo||'CIRCUITO TÉCNICO TÁCTICO'};
     if(t.includes('FUERZA')||t.includes('FUTBOL'))
       return {cls:'tipo-fuerza', icon:'⚡', label: tipo||'FUERZA + FÚTBOL 11'};
-    return null; // sin tipo reconocido
+    return {cls:'tipo-fuerza', icon:'📋', label: tipo||'Entrenamiento'};
   }
 
   function pdfUrl(link){
@@ -1274,66 +1270,69 @@ function renderPlan(keyVal){
     return m ? 'https://drive.google.com/file/d/'+m[1]+'/view' : link;
   }
 
-  let html = '';
-
-  if(sesion){
-    const esHoy    = mejor && mejorDelta === 0;
-    const esFuturo = mejor && mejorDelta > 0;
-    const titulo   = esHoy ? 'Entrenamiento de hoy' : esFuturo ? 'Próximo entrenamiento' : 'Último entrenamiento';
+  function renderCard(idx){
+    const s = sesiones[idx];
+    const delta = Math.round((s.fecha - hoy0)/(1000*60*60*24));
+    const esHoy = delta === 0;
+    const esFuturo = delta > 0;
+    const titulo = esHoy ? 'Entrenamiento de hoy'
+                 : esFuturo ? 'Próximo entrenamiento'
+                 : 'Entrenamiento pasado';
     const fechaLabel = esHoy
-      ? 'Hoy, '+sesion.dia+' de '+MESES_ES[sesion.mesIdx]
-      : DIAS_ES[sesion.fecha.getDay()]+' '+sesion.dia+' de '+MESES_ES[sesion.mesIdx];
-    const tipo = estiloTipo(sesion.tipo) || {cls:'tipo-fuerza', icon:'📋', label: sesion.tipo||'Ver planificación'};
+      ? 'Hoy, '+s.fecha.getDate()+' de '+MESES_ES[s.fecha.getMonth()]
+      : DIAS_ES[s.fecha.getDay()]+' '+s.fecha.getDate()+' de '+MESES_ES[s.fecha.getMonth()];
 
-    html += '<div class="plan-card">';
-    html += '<div class="plan-header">';
-    html += '<div class="plan-tipo-badge '+tipo.cls+'">'+tipo.icon+' '+tipo.label+'</div>';
-    html += '<h2 style="font-family:Oswald;font-weight:700;font-size:28px;margin:8px 0 0;text-transform:uppercase">'+titulo+'</h2>';
-    html += '<div class="plan-fecha">'+fechaLabel+'</div>';
+    // semana relativa
+    const semanaLabel = delta === 0 ? 'Esta semana · Hoy'
+      : delta > 0 && delta <= 7 ? 'Esta semana'
+      : delta < 0 && delta >= -7 ? 'Semana pasada'
+      : 'Próxima semana';
+
+    const tipo = estiloTipo(s.tipo);
+
+    let html = '';
+    // Navegación
+    html += '<div class="plan-nav">';
+    html += `<button class="plan-nav-btn" id="plan-prev" ${idx===0?'disabled':''}>←</button>`;
+    html += '<div class="plan-nav-center">';
+    html += '<div class="plan-nav-semana">'+semanaLabel+'</div>';
+    html += '<div class="plan-nav-count">'+(idx+1)+' de '+sesiones.length+'</div>';
     html += '</div>';
-    html += '<a class="plan-pdf-btn" href="'+pdfUrl(sesion.link)+'" target="_blank" rel="noopener">';
-    html += '<div class="plan-pdf-info"><div class="plan-pdf-icon">📄</div>';
-    html += '<div><div class="plan-pdf-name">Ver planificación</div>';
-    html += '<div class="plan-pdf-sub">Abre el PDF en Google Drive</div></div></div>';
-    html += '<div class="plan-pdf-arrow">→</div></a></div>';
-  } else {
-    html += '<div class="plan-empty"><div class="big-ico">📅</div>';
-    html += '<p>No hay planificaciones cargadas aún para esta sede y categoría.</p></div>';
-  }
+    html += `<button class="plan-nav-btn" id="plan-next" ${idx===sesiones.length-1?'disabled':''}>→</button>`;
+    html += '</div>';
 
-  // Próximos entrenamientos
-  if(proximos.length){
-    html += '<div class="plan-upcoming" style="margin-top:18px">';
-    html += '<div class="plan-upcoming-title">Próximos entrenamientos</div>';
-    proximos.forEach(p => {
-      const delta = Math.round((p.fecha - hoy0)/(1000*60*60*24));
-      const label = delta===0?'Hoy':delta===1?'Mañana':DIAS_ES[p.fecha.getDay()]+' '+p.fecha.getDate();
-      const tienePlan = p.link && p.link.startsWith('http');
-      const est = estiloTipo(p.tipo);
-
-      html += '<div class="plan-upcoming-item">';
-      html += '<span class="plan-upcoming-day">'+label+'</span>';
-      if(tienePlan && est){
-        html += '<span class="plan-upcoming-tipo '+est.cls+'">'+est.label+'</span>';
-      } else if(tienePlan){
-        html += '<span class="plan-upcoming-tipo tipo-fuerza">Ver PDF</span>';
-      } else {
-        html += '<span class="plan-upcoming-tipo" style="color:var(--muted2);border-color:var(--line)">SIN PLANIFICACIÓN CARGADA</span>';
-      }
+    if(s.tienePlan){
+      html += '<div class="plan-card">';
+      html += '<div class="plan-header">';
+      html += '<div class="plan-tipo-badge '+tipo.cls+'">'+tipo.icon+' '+tipo.label+'</div>';
+      html += '<h2 style="font-family:Oswald;font-weight:700;font-size:28px;margin:8px 0 0;text-transform:uppercase">'+titulo+'</h2>';
+      html += '<div class="plan-fecha">'+fechaLabel+'</div>';
       html += '</div>';
-    });
-    html += '</div>';
+      html += '<a class="plan-pdf-btn" href="'+pdfUrl(s.link)+'" target="_blank" rel="noopener">';
+      html += '<div class="plan-pdf-info"><div class="plan-pdf-icon">📄</div>';
+      html += '<div><div class="plan-pdf-name">Ver planificación</div>';
+      html += '<div class="plan-pdf-sub">Abre el PDF en Google Drive</div></div></div>';
+      html += '<div class="plan-pdf-arrow">→</div></a></div>';
+    } else {
+      html += '<div class="plan-card">';
+      html += '<div class="plan-header" style="opacity:.6">';
+      html += '<div class="plan-tipo-badge" style="background:var(--panel2);color:var(--muted);border-color:var(--line)">📅 Entrenamiento</div>';
+      html += '<h2 style="font-family:Oswald;font-weight:700;font-size:28px;margin:8px 0 0;text-transform:uppercase;color:var(--muted)">'+titulo+'</h2>';
+      html += '<div class="plan-fecha">'+fechaLabel+'</div>';
+      html += '</div>';
+      html += '<div style="padding:18px 22px;color:var(--muted);font-size:14px;text-align:center">📋 Planificación aún no cargada para este día</div>';
+      html += '</div>';
+    }
+
+    $('plan-result').innerHTML = html;
+
+    // Eventos de navegación
+    const btnPrev = $('plan-prev'), btnNext = $('plan-next');
+    if(btnPrev) btnPrev.onclick = ()=>{ idxActual = idx-1; renderCard(idxActual); };
+    if(btnNext) btnNext.onclick = ()=>{ idxActual = idx+1; renderCard(idxActual); };
   }
 
-  // Aviso si hoy no hay entrenamiento
-  if(!esHoyDiaEntrenamiento){
-    const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-    const diasLabel = dias.map(d => dayNames[d]).join(', ');
-    html += '<div style="margin-top:14px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 18px;font-size:13px;color:var(--muted);text-align:center">';
-    html += '📆 Hoy no hay entrenamiento · Días de entrenamiento: <strong style="color:var(--ink)">'+diasLabel+'</strong></div>';
-  }
-
-  $('plan-result').innerHTML = html;
+  renderCard(idxActual);
 }
 
 
