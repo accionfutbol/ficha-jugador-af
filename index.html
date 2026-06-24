@@ -478,6 +478,10 @@ footer strong{color:var(--muted)}
         <span>Fotos y Videos</span>
         <span class="home-btn-soon">Próximamente</span>
       </button>
+      <button class="home-btn home-btn-ghost" id="btn-indumentaria">
+        <span class="home-btn-icon">👕</span>
+        <span>Solicitud de Indumentaria</span>
+      </button>
     </div>
   </div>
 </div>
@@ -772,6 +776,7 @@ $('btn-ficha').onclick = showFicha;
 $('btn-inicio').onclick = showHome;
 $('btn-planificaciones').onclick = showPlan;
 $('btn-fotos').onclick = ()=>showToast('Fotos y Videos — próximamente disponible');
+$('btn-indumentaria').onclick = ()=>window.open('https://solicitudindumentariaaf.netlify.app/', '_blank');
 
 
 /* ── utils ── */
