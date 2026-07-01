@@ -407,17 +407,17 @@ footer strong{color:var(--muted)}
   display:flex;align-items:center;gap:16px;width:100%;
 }
 .fh-avatar{
-  width:100px;height:100px;border-radius:50%;flex-shrink:0;
+  width:72px;height:72px;border-radius:50%;flex-shrink:0;
   background:linear-gradient(135deg,var(--pink),var(--pink-deep));
   display:flex;align-items:center;justify-content:center;
-  font-family:'Oswald',sans-serif;font-weight:700;font-size:38px;color:#fff;
+  font-family:'Oswald',sans-serif;font-weight:700;font-size:26px;color:#fff;
   border:2px solid rgba(255,255,255,.12);box-shadow:0 6px 20px rgba(255,46,147,.3);
   overflow:hidden;
 }
 .fh-avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .fh-name-block{flex:1;min-width:0}
 @media(max-width:600px){
-  .fh-avatar{width:75px;height:75px;font-size:26px}
+  .fh-avatar{width:58px;height:58px;font-size:20px}
 }
 
 
@@ -477,10 +477,6 @@ footer strong{color:var(--muted)}
         <span class="home-btn-icon">📷</span>
         <span>Fotos y Videos</span>
         <span class="home-btn-soon">Próximamente</span>
-      </button>
-      <button class="home-btn home-btn-ghost" id="btn-indumentaria">
-        <span class="home-btn-icon">👕</span>
-        <span>Solicitud de Indumentaria</span>
       </button>
     </div>
   </div>
@@ -641,7 +637,7 @@ footer strong{color:var(--muted)}
 
   <div class="morosidad-block" id="morosidad" style="display:none">
     <div class="ico">⚠️</div>
-    <h2>Por morosidad sobre 3 meses</h2>
+    <h2>Por morosidad</h2>
     <p>Favor comunicarse vía WhatsApp en el grupo del jugador con contabilidad.</p>
     <p class="sub">El acceso a la ficha se restablece automáticamente al regularizar el pago.</p>
   </div>
@@ -776,7 +772,6 @@ $('btn-ficha').onclick = showFicha;
 $('btn-inicio').onclick = showHome;
 $('btn-planificaciones').onclick = showPlan;
 $('btn-fotos').onclick = ()=>showToast('Fotos y Videos — próximamente disponible');
-$('btn-indumentaria').onclick = ()=>window.open('https://solicitudindumentariaaf.netlify.app/', '_blank');
 
 
 /* ── utils ── */
@@ -873,6 +868,12 @@ function setStatus(s){
 /* ── búsqueda ── */
 let chartInstance = null;
 
+function esc(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 function estBadge(est){
   if(!est) return '';
   const m={'EN DESARROLLO':'desarrollo','DESARROLLO':'desarrollo','ACEPTABLE':'aceptable','DESTACADO':'destacado'};
@@ -886,7 +887,7 @@ function torneoBadge(t){
   if(!t) return '';
   const isAmistoso = t.toUpperCase()==='AMISTOSOS'||t.toUpperCase()==='AMISTOSO';
   if(isAmistoso) return '<span class="torneo-badge amistoso">⚽ Amistosos</span>';
-  return '<span class="torneo-badge torneo">🏆 Torneo: '+t+'</span>';
+  return '<span class="torneo-badge torneo">🏆 Torneo: '+esc(t)+'</span>';
 }
 
 function renderChart(p){
@@ -923,7 +924,7 @@ function setV(id,v,suf=''){
   const el=$(id);
   if(!v&&v!==0){el.textContent=dash;el.classList.add('empty');}
   else{
-    el.innerHTML=v+(suf?`<sub>${suf}</sub>`:'');
+    el.innerHTML=esc(v)+(suf?`<sub>${esc(suf)}</sub>`:'');
     el.classList.remove('empty');
   }
 }
@@ -948,7 +949,7 @@ function setAvatar(p){
   const initials = getInitials(p.nombre);
   if(p.foto && p.foto.startsWith('http')){
     const url = driveImgUrl(p.foto);
-    el.innerHTML = '<img src="'+url+'" alt="'+p.nombre+'">';
+    el.innerHTML = '<img src="'+esc(url)+'" alt="'+esc(p.nombre)+'">';
     const img = el.querySelector('img');
     img.onerror = function(){ el.innerHTML = initials; };
   } else {
@@ -960,7 +961,7 @@ function show(p){
   current=p;
   $('p-nombre').textContent=p.nombre;
   $('p-rut').textContent='RUT '+p.rut;
-  $('p-tags').innerHTML=[p.sede,p.cat].filter(Boolean).map(t=>`<span class="tag">${t}</span>`).join('');
+  $('p-tags').innerHTML=[p.sede,p.cat].filter(Boolean).map(t=>`<span class="tag">${esc(t)}</span>`).join('');
   // Avatar / foto
   setAvatar(p);
   // Torneo
@@ -1275,7 +1276,7 @@ function renderPlan(keyVal){
 
   function pdfUrl(link){
     const m = (link||'').match(/\/d\/([a-zA-Z0-9_-]+)/);
-    return m ? 'https://drive.google.com/file/d/'+m[1]+'/view' : link;
+    return m ? 'https://drive.google.com/file/d/'+m[1]+'/view' : '#';
   }
 
   function renderCard(idx){
@@ -1312,7 +1313,7 @@ function renderPlan(keyVal){
     if(s.tienePlan){
       html += '<div class="plan-card">';
       html += '<div class="plan-header">';
-      html += '<div class="plan-tipo-badge '+tipo.cls+'">'+tipo.icon+' '+tipo.label+'</div>';
+      html += '<div class="plan-tipo-badge '+esc(tipo.cls)+'">'+tipo.icon+' '+esc(tipo.label)+'</div>';
       html += '<h2 style="font-family:Oswald;font-weight:700;font-size:28px;margin:8px 0 0;text-transform:uppercase">'+titulo+'</h2>';
       html += '<div class="plan-fecha">'+fechaLabel+'</div>';
       html += '</div>';
