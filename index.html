@@ -1487,8 +1487,6 @@ const fbAuth = firebase.auth();
 let rutAsociado = null;
 
 function normRut(r){ return String(r||'').replace(/\./g,'').replace(/-/g,'').replace(/\s/g,'').toUpperCase().trim(); }
-function saveRut(email,rut){ try{ localStorage.setItem('af_rut_'+btoa(email),rut); }catch(e){} }
-function loadRut(email){ try{ return localStorage.getItem('af_rut_'+btoa(email))||''; }catch(e){ return ''; } }
 
 function switchTab(tab){
   $('form-login').style.display    = tab==='login'    ? 'block':'none';
@@ -1544,13 +1542,30 @@ function mostrarFichaAsociada(){
   }
 }
 
+// Guardar RUT con clave simple (compatible con PWA y Safari)
+function saveRut(email,rut){
+  try{ localStorage.setItem('af_rut_v2',rut); localStorage.setItem('af_email_v2',email); }catch(e){}
+}
+function loadRut(email){
+  try{
+    // Intentar clave simple primero (v2)
+    const savedEmail = localStorage.getItem('af_email_v2');
+    const savedRut   = localStorage.getItem('af_rut_v2');
+    if(savedRut && savedEmail === email) return savedRut;
+    // Fallback clave antigua con btoa
+    return localStorage.getItem('af_rut_'+btoa(email))||'';
+  }catch(e){ return ''; }
+}
+
 fbAuth.onAuthStateChanged(user => {
   if(user){
     rutAsociado = normRut(loadRut(user.email));
     $('auth-screen').style.display = 'none';
     $('btn-logout').style.display  = 'block';
     $('search-wrap') && ($('search-wrap').style.display = 'none');
+    // Si PLAYERS ya cargó, mostrar ficha inmediatamente
     if(rutAsociado && PLAYERS && PLAYERS.length) mostrarFichaAsociada();
+    // Si no, load() llamará a mostrarFichaAsociada() cuando termine
   } else {
     rutAsociado = null;
     $('auth-screen').style.display = 'flex';
