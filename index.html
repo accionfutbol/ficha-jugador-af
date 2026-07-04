@@ -1531,7 +1531,11 @@ async function doRegister(){
   if(!PLAYERS||!PLAYERS.length){ showAuthErr('register-err','La base de datos aún no cargó. Espera un momento.'); return; }
   if(!PLAYERS.find(p=>normRut(p.rut)===rut)){ showAuthErr('register-err','RUT no encontrado. Verifica el RUT de tu hijo/a (sin puntos, con guión).'); return; }
   $('btn-register').disabled=true;
-  try{ await fbAuth.createUserWithEmailAndPassword(email,pass); saveRut(email,rut); }
+  try{
+    const cred = await fbAuth.createUserWithEmailAndPassword(email,pass);
+    await cred.user.updateProfile({displayName: rut});
+    saveRut(email,rut);
+  }
   catch(e){ showAuthErr('register-err',fbErr(e.code)); }
   $('btn-register').disabled=false;
 }
@@ -1561,7 +1565,10 @@ function mostrarFichaAsociada(){
 fbAuth.onAuthStateChanged(user => {
   authListo = true;
   if(user){
-    rutAsociado = normRut(loadRut(user.email));
+    // Leer RUT desde displayName (Firebase) con fallback a localStorage
+    const rutFromProfile = normRut(user.displayName||'');
+    const rutFromStorage = normRut(loadRut(user.email));
+    rutAsociado = rutFromProfile || rutFromStorage;
     $('auth-screen').style.display = 'none';
     $('btn-logout').style.display  = 'block';
     $('search-wrap') && ($('search-wrap').style.display = 'none');
