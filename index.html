@@ -1485,6 +1485,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const fbAuth = firebase.auth();
+fbAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 let rutAsociado = null;
 let playersListo = false;
 let authListo    = false;
