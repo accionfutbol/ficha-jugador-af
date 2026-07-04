@@ -454,6 +454,28 @@ footer strong{color:var(--muted)}
   border-radius:12px;padding:14px 18px;font-size:13px;color:var(--muted);text-align:center
 }
 
+
+/* ── insignias de racha ── */
+.insignias-wrap{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px}
+.insignia{display:flex;align-items:center;gap:8px;border-radius:999px;padding:7px 14px 7px 8px;font-size:12px;font-weight:600;letter-spacing:.02em;border:1.5px solid}
+.insignia-logo{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;font-family:'Oswald',sans-serif;flex-shrink:0}
+.insignia-bronze{background:rgba(205,127,50,.12);border-color:rgba(205,127,50,.5);color:#cd7f32}
+.insignia-bronze .insignia-logo{background:rgba(205,127,50,.25);color:#cd7f32}
+.insignia-silver{background:rgba(180,180,190,.12);border-color:rgba(180,180,190,.5);color:#b0b0be}
+.insignia-silver .insignia-logo{background:rgba(180,180,190,.25);color:#b0b0be}
+.insignia-gold{background:rgba(255,193,7,.12);border-color:rgba(255,193,7,.5);color:#ffc107}
+.insignia-gold .insignia-logo{background:rgba(255,193,7,.25);color:#ffc107}
+.insignia-diamond{background:rgba(100,200,255,.12);border-color:rgba(100,200,255,.5);color:#64c8ff}
+.insignia-diamond .insignia-logo{background:rgba(100,200,255,.25);color:#64c8ff}
+/* ── botón Gira ── */
+.gira-btn{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#1a0a2e,#2d1250);border:1.5px solid rgba(255,46,147,.5);border-radius:14px;padding:16px 20px;color:#fff;text-decoration:none;width:100%;margin-top:14px;cursor:pointer;transition:border-color .15s,box-shadow .15s;box-sizing:border-box}
+.gira-btn:hover{border-color:var(--pink);box-shadow:0 4px 20px rgba(255,46,147,.2)}
+.gira-btn-icon{font-size:28px;flex-shrink:0}
+.gira-btn-text{flex:1}
+.gira-btn-title{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.gira-btn-sub{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px}
+.gira-btn-arrow{color:var(--pink);font-size:18px}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -482,6 +504,10 @@ footer strong{color:var(--muted)}
         <span class="home-btn-icon">👕</span>
         <span>Solicitud de Indumentaria</span>
       </button>
+      <a class="home-btn home-btn-ghost" href="https://bit.ly/m/lagiraaccionfutbolbuenosairescup2026" target="_blank" rel="noopener" style="text-decoration:none">
+        <span class="home-btn-icon">✈️</span>
+        <span>Gira Buenos Aires Cup 2026</span>
+      </a>
     </div>
   </div>
 </div>
@@ -557,6 +583,7 @@ footer strong{color:var(--muted)}
         </div>
       </div>
       <div class="fh-tags" id="p-tags"></div>
+      <div class="insignias-wrap" id="p-insignias"></div>
     </div>
     <div class="ficha-body">
 
@@ -630,6 +657,14 @@ footer strong{color:var(--muted)}
         <button class="btn btn-primary" id="pdf">⤓ Descargar PDF</button>
         <button class="btn btn-ghost" id="clear">← Nueva búsqueda</button>
       </div>
+      <a class="gira-btn" href="https://bit.ly/m/lagiraaccionfutbolbuenosairescup2026" target="_blank" rel="noopener">
+        <div class="gira-btn-icon">✈️</div>
+        <div class="gira-btn-text">
+          <div class="gira-btn-title">Gira Acción Fútbol</div>
+          <div class="gira-btn-sub">Buenos Aires Cup 2026 — Ver info y formulario</div>
+        </div>
+        <div class="gira-btn-arrow">→</div>
+      </a>
     </div>
   </div>
 
@@ -962,6 +997,19 @@ function setAvatar(p){
   }
 }
 
+function renderInsignias(p){
+  const tm = lastThree();
+  const sesiones = Number(p.months[tm[0].idx]) || 0;
+  let ins = null;
+  if(sesiones >= 12)     ins = {cls:'insignia-diamond', emoji:'💎', label:'Mes completo sin faltas'};
+  else if(sesiones >= 9) ins = {cls:'insignia-gold',    emoji:'🥇', label:'3 semanas sin faltas'};
+  else if(sesiones >= 6) ins = {cls:'insignia-silver',  emoji:'🥈', label:'2 semanas sin faltas'};
+  else if(sesiones >= 3) ins = {cls:'insignia-bronze',  emoji:'🥉', label:'1 semana sin faltas'};
+  const el = $('p-insignias');
+  if(!ins){ el.innerHTML=''; return; }
+  el.innerHTML='<div class="insignia '+ins.cls+'"><div class="insignia-logo">AF</div><span>'+ins.emoji+' '+ins.label+'</span></div>';
+}
+
 function show(p){
   current=p;
   $('p-nombre').textContent=p.nombre;
@@ -969,6 +1017,8 @@ function show(p){
   $('p-tags').innerHTML=[p.sede,p.cat].filter(Boolean).map(t=>`<span class="tag">${esc(t)}</span>`).join('');
   // Avatar / foto
   setAvatar(p);
+  // Insignias
+  renderInsignias(p);
   // Torneo
   $('p-torneo').innerHTML = torneoBadge(p.torneo);
   setV('p-nac',p.nac); setV('p-edad',p.edad,p.edad?' años':'');
