@@ -612,7 +612,7 @@ footer strong{color:var(--muted)}
       Puedes descargarla en PDF.
     </p>
 
-    <div class="search-wrap">
+    <div class="search-wrap" id="search-wrap">
       <div class="search-box">
         <span class="search-ico">⌕</span>
         <input id="q" type="text"
@@ -1549,11 +1549,13 @@ fbAuth.onAuthStateChanged(user => {
     rutAsociado = normRut(loadRut(user.email));
     $('auth-screen').style.display = 'none';
     $('btn-logout').style.display  = 'block';
+    $('search-wrap') && ($('search-wrap').style.display = 'none');
     if(rutAsociado && PLAYERS && PLAYERS.length) mostrarFichaAsociada();
   } else {
     rutAsociado = null;
     $('auth-screen').style.display = 'flex';
     $('btn-logout').style.display  = 'none';
+    $('search-wrap') && ($('search-wrap').style.display = '');
     $('ficha').classList.remove('show');
   }
 });
