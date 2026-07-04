@@ -963,7 +963,8 @@ async function load(){
     $('q').disabled=false; $('go').disabled=false;
     $('q').placeholder='Ej: 22.123.456-7';
     setStatus('live');
-    if(rutAsociado) mostrarFichaAsociada();
+    playersListo = true;
+    intentarMostrarFicha();
   }catch(e){
     $('loader').classList.remove('show');
     $('errBox').classList.add('show');
@@ -1485,6 +1486,12 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const fbAuth = firebase.auth();
 let rutAsociado = null;
+let playersListo = false;
+let authListo    = false;
+
+function intentarMostrarFicha(){
+  if(playersListo && authListo && rutAsociado) mostrarFichaAsociada();
+}
 
 function normRut(r){ return String(r||'').replace(/\./g,'').replace(/-/g,'').replace(/\s/g,'').toUpperCase().trim(); }
 
@@ -1558,14 +1565,13 @@ function loadRut(email){
 }
 
 fbAuth.onAuthStateChanged(user => {
+  authListo = true;
   if(user){
     rutAsociado = normRut(loadRut(user.email));
     $('auth-screen').style.display = 'none';
     $('btn-logout').style.display  = 'block';
     $('search-wrap') && ($('search-wrap').style.display = 'none');
-    // Si PLAYERS ya cargó, mostrar ficha inmediatamente
-    if(rutAsociado && PLAYERS && PLAYERS.length) mostrarFichaAsociada();
-    // Si no, load() llamará a mostrarFichaAsociada() cuando termine
+    intentarMostrarFicha();
   } else {
     rutAsociado = null;
     $('auth-screen').style.display = 'flex';
