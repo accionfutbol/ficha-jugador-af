@@ -630,7 +630,7 @@ footer strong{color:var(--muted)}
     <div class="eyebrow">Portal del apoderado</div>
     <h1>Ficha de<br>tu <em>jugador</em></h1>
     <p class="subtitle">
-      Ingresa el <strong>RUT</strong> de tu hijo/a para ver su ficha completa:
+      Acá podras observar la ficha completa de su jugador:
       asistencia, evaluaciones físicas, minutaje y más.
       Puedes descargarla en PDF.
     </p>
@@ -1617,9 +1617,35 @@ function mostrarSelectorHijos(jugadores){
 
 function seleccionarHijo(idx){
   const j=window._hijosCache[idx]; if(!j) return;
+  window._hijoActual=idx;
   const sel=$('selector-hijos'); if(sel) sel.style.display='none';
   show(j); $('ficha').classList.add('show');
   $('ficha').scrollIntoView({behavior:'smooth',block:'start'});
+  // Mostrar navegador si hay más de 1 hijo
+  if(window._hijosCache.length>1) renderNavHijos(idx);
+}
+
+function renderNavHijos(idx){
+  const cache=window._hijosCache, total=cache.length;
+  let nav=$('nav-hijos');
+  if(!nav){
+    nav=document.createElement('div');
+    nav.id='nav-hijos';
+    // Insertar al inicio de ficha-header
+    const header=document.querySelector('.ficha-header');
+    header.insertBefore(nav,header.firstChild);
+  }
+  const prev=idx>0?cache[idx-1]:null;
+  const next=idx<total-1?cache[idx+1]:null;
+  nav.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px';
+  nav.innerHTML=`
+    <button onclick="seleccionarHijo(${idx-1})" style="display:flex;align-items:center;gap:6px;background:var(--panel2);border:1.5px solid var(--line);border-radius:8px;padding:6px 12px;color:${prev?'var(--pink)':'var(--muted)'};cursor:${prev?'pointer':'default'};font-size:12px;font-family:Oswald;letter-spacing:.05em" ${prev?'':'disabled'}>
+      ← ${prev?prev.nombre.split(' ')[0]:''}
+    </button>
+    <span style="font-size:11px;color:var(--muted2)">${idx+1} de ${total}</span>
+    <button onclick="seleccionarHijo(${idx+1})" style="display:flex;align-items:center;gap:6px;background:var(--panel2);border:1.5px solid var(--line);border-radius:8px;padding:6px 12px;color:${next?'var(--pink)':'var(--muted)'};cursor:${next?'pointer':'default'};font-size:12px;font-family:Oswald;letter-spacing:.05em" ${next?'':'disabled'}>
+      ${next?next.nombre.split(' ')[0]:''} →
+    </button>`;
 }
 
 fbAuth.onAuthStateChanged(user => {
