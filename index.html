@@ -520,6 +520,15 @@ footer strong{color:var(--muted)}
 .gira-btn-sub{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px}
 .gira-btn-arrow{color:var(--pink);font-size:18px}
 
+
+.reg-num-btn{
+  flex:1;padding:12px 0;border:1.5px solid var(--line);border-radius:10px;
+  background:var(--bg);color:var(--muted);font-family:'Oswald',sans-serif;
+  font-size:18px;font-weight:700;cursor:pointer;transition:.15s;
+}
+.reg-num-btn:hover{border-color:var(--pink);color:var(--pink)}
+.reg-num-btn.active{border-color:var(--pink);background:var(--pink);color:#fff}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -544,8 +553,17 @@ footer strong{color:var(--muted)}
     <div id="form-register" style="display:none">
       <div class="auth-field"><label>Correo electrónico</label><input type="email" id="reg-email" placeholder="tu@correo.com" autocomplete="email"></div>
       <div class="auth-field"><label>Contraseña (mínimo 6 caracteres)</label><input type="password" id="reg-pass" placeholder="••••••••" autocomplete="new-password"></div>
-      <div class="auth-field"><label>RUT del jugador — sin puntos, con guión</label><input type="text" id="reg-rut" placeholder="Ej: 12345678-9" autocomplete="off" inputmode="text"></div>
-      <button class="auth-btn" id="btn-register" onclick="doRegister()">Crear cuenta</button>
+      <div class="auth-field">
+        <label>¿Cuántos jugadores tienes participando en la academia?</label>
+        <div style="display:flex;gap:10px;margin-top:6px" id="reg-num-btns">
+          <button type="button" class="reg-num-btn" onclick="seleccionarNumJugadores(1)">1</button>
+          <button type="button" class="reg-num-btn" onclick="seleccionarNumJugadores(2)">2</button>
+          <button type="button" class="reg-num-btn" onclick="seleccionarNumJugadores(3)">3</button>
+          <button type="button" class="reg-num-btn" onclick="seleccionarNumJugadores(4)">4</button>
+        </div>
+      </div>
+      <div id="reg-ruts-wrap" style="display:none"></div>
+      <button class="auth-btn" id="btn-register" onclick="doRegister()" style="display:none">Crear cuenta</button>
       <div class="auth-err" id="register-err"></div>
       <p class="auth-hint">Solo verás la ficha del jugador asociado a tu RUT.</p>
     </div>
@@ -582,7 +600,7 @@ footer strong{color:var(--muted)}
       </a>
       <a class="home-btn home-btn-ghost" href="https://bit.ly/charlaspodcastaccionfutbolpro" target="_blank" rel="noopener" style="text-decoration:none">
         <span class="home-btn-icon">🎙️</span>
-        <span>Charlas y Podcast Tiempo Extra - Acción Fútbol</span>
+        <span>Charla y Podcast Tiempo Extra - Acción Fútbol</span>
       </a>
     </div>
   </div>
@@ -1518,17 +1536,40 @@ async function doLogin(){
   catch(e){ showAuthErr('login-err',fbErr(e.code)); }
   $('btn-login').disabled=false;
 }
+
+function seleccionarNumJugadores(n){
+  // Marcar botón activo
+  document.querySelectorAll('.reg-num-btn').forEach((b,i)=>{
+    b.classList.toggle('active', i+1===n);
+  });
+  // Generar campos RUT
+  const wrap = $('reg-ruts-wrap');
+  wrap.style.display = 'block';
+  wrap.innerHTML = Array.from({length:n},(_,i)=>`
+    <div class="auth-field">
+      <label>RUT jugador ${n>1?i+1:''} — sin puntos, con guión</label>
+      <input type="text" id="reg-rut-${i}" placeholder="Ej: 12345678-9" autocomplete="off" inputmode="text">
+    </div>`).join('');
+  $('btn-register').style.display = 'block';
+  $('register-err').style.display = 'none';
+}
+
 async function doRegister(){
-  const email=$('reg-email').value.trim(), pass=$('reg-pass').value, rut=normRut($('reg-rut').value);
+  const email=$('reg-email').value.trim(), pass=$('reg-pass').value;
+  // Leer todos los campos reg-rut-N generados dinámicamente
+  const rutsRaw=[]; let i=0;
+  while($('reg-rut-'+i)){ const v=normRut($('reg-rut-'+i).value); if(v) rutsRaw.push(v); i++; }
   $('register-err').style.display='none';
-  if(!rut){ showAuthErr('register-err','Ingresa el RUT del jugador.'); return; }
+  if(!rutsRaw.length){ showAuthErr('register-err','Ingresa el RUT del jugador.'); return; }
   if(!PLAYERS||!PLAYERS.length){ showAuthErr('register-err','La base de datos aún no cargó. Espera un momento.'); return; }
-  if(!PLAYERS.find(p=>normRut(p.rut)===rut)){ showAuthErr('register-err','RUT no encontrado. Verifica el RUT de tu hijo/a (sin puntos, con guión).'); return; }
+  const noEnc=rutsRaw.filter(r=>!PLAYERS.find(p=>normRut(p.rut)===r));
+  if(noEnc.length){ showAuthErr('register-err','RUT no encontrado: '+noEnc.join(', ')+'. Verifica (sin puntos, con guión).'); return; }
   $('btn-register').disabled=true;
   try{
-    const cred = await fbAuth.createUserWithEmailAndPassword(email,pass);
-    await cred.user.updateProfile({displayName: rut});
-    saveRut(email,rut);
+    const cred=await fbAuth.createUserWithEmailAndPassword(email,pass);
+    const rutsStr=rutsRaw.join('|');
+    await cred.user.updateProfile({displayName:rutsStr});
+    saveRut(email,rutsStr);
   }
   catch(e){ showAuthErr('register-err',fbErr(e.code)); }
   $('btn-register').disabled=false;
@@ -1545,33 +1586,56 @@ async function doResetPass(){
 async function doLogout(){ await fbAuth.signOut(); }
 
 function mostrarFichaAsociada(){
-  if(!rutAsociado) return;
-  const j=PLAYERS.find(p=>normRut(p.rut)===rutAsociado);
-  if(j){
-    show(j);
-    $('ficha').classList.add('show');
-    $('ficha').scrollIntoView({behavior:'smooth',block:'start'});
+  const ruts=(rutAsociado||'').split('|').map(r=>normRut(r)).filter(Boolean);
+  if(!ruts.length) return;
+  if(ruts.length===1){
+    const j=PLAYERS.find(p=>normRut(p.rut)===ruts[0]);
+    if(j){ show(j); $('ficha').classList.add('show'); $('ficha').scrollIntoView({behavior:'smooth',block:'start'}); }
+    else { $('hint').textContent='⚠️ Jugador no encontrado. Contacta a la academia.'; }
   } else {
-    $('hint').textContent='⚠️ Jugador no encontrado. Contacta a la academia.';
+    const jugadores=ruts.map(r=>PLAYERS.find(p=>normRut(p.rut)===r)).filter(Boolean);
+    if(!jugadores.length){ $('hint').textContent='⚠️ Jugadores no encontrados. Contacta a la academia.'; return; }
+    mostrarSelectorHijos(jugadores);
   }
 }
 
+function mostrarSelectorHijos(jugadores){
+  $('ficha').classList.remove('show');
+  let sel=$('selector-hijos');
+  if(!sel){
+    sel=document.createElement('div');
+    sel.id='selector-hijos';
+    sel.style.cssText='max-width:640px;margin:20px auto 0;display:flex;flex-direction:column;gap:10px;padding:0 16px';
+    const sw=$('search-wrap');
+    sw.parentNode.insertBefore(sel,sw.nextSibling);
+  }
+  sel.style.display='block';
+  sel.innerHTML='<div style="font-family:Oswald;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Selecciona a tu hijo/a</div>'+
+    jugadores.map((j,i)=>`<button onclick="seleccionarHijo(${i})" style="display:flex;align-items:center;gap:14px;background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:14px 18px;cursor:pointer;width:100%;text-align:left;transition:border-color .15s" onmouseover="this.style.borderColor='var(--pink)'" onmouseout="this.style.borderColor='var(--line)'"><div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink-deep));display:flex;align-items:center;justify-content:center;font-family:Oswald;font-weight:700;font-size:16px;color:#fff;flex-shrink:0">${j.nombre.split(' ').slice(0,2).map(n=>n[0]).join('')}</div><div><div style="font-weight:600;font-size:15px;color:var(--ink)">${j.nombre}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${j.sede||''} · ${j.cat||''}</div></div></button>`).join('');
+  window._hijosCache=jugadores;
+}
+
+function seleccionarHijo(idx){
+  const j=window._hijosCache[idx]; if(!j) return;
+  const sel=$('selector-hijos'); if(sel) sel.style.display='none';
+  show(j); $('ficha').classList.add('show');
+  $('ficha').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
 fbAuth.onAuthStateChanged(user => {
-  authListo = true;
+  authListo=true;
   if(user){
-    // Leer RUT desde displayName (Firebase) con fallback a localStorage
-    const rutFromProfile = normRut(user.displayName||'');
-    const rutFromStorage = normRut(loadRut(user.email));
-    rutAsociado = rutFromProfile || rutFromStorage;
-    $('auth-screen').style.display = 'none';
-    $('btn-logout').style.display  = 'block';
-    $('search-wrap') && ($('search-wrap').style.display = 'none');
+    rutAsociado=(user.displayName||'')||(loadRut(user.email)||'');
+    $('auth-screen').style.display='none';
+    $('btn-logout').style.display='block';
+    $('search-wrap')&&($('search-wrap').style.display='none');
     intentarMostrarFicha();
   } else {
-    rutAsociado = null;
-    $('auth-screen').style.display = 'flex';
-    $('btn-logout').style.display  = 'none';
-    $('search-wrap') && ($('search-wrap').style.display = '');
+    rutAsociado=null;
+    $('auth-screen').style.display='flex';
+    $('btn-logout').style.display='none';
+    $('search-wrap')&&($('search-wrap').style.display='');
+    const sel=$('selector-hijos'); if(sel) sel.style.display='none';
     $('ficha').classList.remove('show');
   }
 });
