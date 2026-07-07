@@ -620,7 +620,7 @@ footer strong{color:var(--muted)}
     <div class="eyebrow">Portal del apoderado</div>
     <h1>Ficha de<br>tu <em>jugador</em></h1>
     <p class="subtitle">
-      Acá podras observar la ficha completa de su jugador:
+      Acá podras observar la ficha completa de tu jugador:
       asistencia, evaluaciones físicas, minutaje y más.
       Puedes descargarla en PDF.
     </p>
@@ -1505,6 +1505,8 @@ let authListo    = false;
 function normRut(r){ return String(r||'').replace(/\./g,'').replace(/-/g,'').replace(/\s/g,'').toUpperCase().trim(); }
 function saveRut(email,rut){ try{ localStorage.setItem('af_rut_v2',rut); localStorage.setItem('af_email_v2',email); }catch(e){} }
 function loadRut(email){ try{ const e=localStorage.getItem('af_email_v2'),r=localStorage.getItem('af_rut_v2'); return(r&&e===email)?r:''; }catch(e){ return ''; } }
+const ADMIN_EMAIL = 'informacion@accionfutbol.cl';
+
 function intentarMostrarFicha(){ if(playersListo&&authListo&&rutAsociado) mostrarFichaAsociada(); }
 
 function switchTab(tab){
@@ -1640,6 +1642,14 @@ function renderNavHijos(idx){
 fbAuth.onAuthStateChanged(user => {
   authListo=true;
   if(user){
+    // Modo admin — mostrar buscador completo
+    if(user.email.toLowerCase()===ADMIN_EMAIL){
+      $('auth-screen').style.display='none';
+      $('btn-logout').style.display='block';
+      $('search-wrap')&&($('search-wrap').style.display='');
+      $('hint').innerHTML=`<b>ADMIN</b> · ${PLAYERS.length?PLAYERS.length.toLocaleString('es-CL')+' jugadores':'Cargando…'}`;
+      return;
+    }
     rutAsociado=(user.displayName||'')||(loadRut(user.email)||'');
     // Si aún no hay RUT, buscar por correo en PLAYERS (usuarios existentes)
     if(!rutAsociado && PLAYERS && PLAYERS.length){
@@ -1647,7 +1657,6 @@ fbAuth.onAuthStateChanged(user => {
       const jugadoresDelCorreo=PLAYERS.filter(p=>(p.correoAp||'').toLowerCase()===email);
       if(jugadoresDelCorreo.length){
         rutAsociado=jugadoresDelCorreo.map(j=>normRut(j.rut)).join('|');
-        // Actualizar displayName para futuras sesiones
         user.updateProfile({displayName:rutAsociado});
         saveRut(user.email,rutAsociado);
       }
