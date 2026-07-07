@@ -620,7 +620,7 @@ footer strong{color:var(--muted)}
     <div class="eyebrow">Portal del apoderado</div>
     <h1>Ficha de<br>tu <em>jugador</em></h1>
     <p class="subtitle">
-      Acá podras observar la ficha completa de tu jugador:
+      Acá podras observar la ficha completa de su jugador:
       asistencia, evaluaciones físicas, minutaje y más.
       Puedes descargarla en PDF.
     </p>
@@ -1550,17 +1550,21 @@ async function doRegister(){
   const email=$('reg-email').value.trim().toLowerCase(), pass=$('reg-pass').value;
   $('register-err').style.display='none';
   if(!email){ showAuthErr('register-err','Ingresa tu correo.'); return; }
-  if(!PLAYERS||!PLAYERS.length){ showAuthErr('register-err','La base de datos aún no cargó. Espera un momento.'); return; }
-  // Buscar jugadores asociados a este correo
-  const jugadoresDelCorreo = PLAYERS.filter(p=>(p.correoAp||'').toLowerCase()===email);
-  if(!jugadoresDelCorreo.length){ showAuthErr('register-err','Este correo no está registrado en la academia. Contáctanos para registrarlo.'); return; }
+  // Admin no necesita validación contra la planilla
+  if(email!==ADMIN_EMAIL){
+    if(!PLAYERS||!PLAYERS.length){ showAuthErr('register-err','La base de datos aún no cargó. Espera un momento.'); return; }
+    const jugadoresDelCorreo=PLAYERS.filter(p=>(p.correoAp||'').toLowerCase()===email);
+    if(!jugadoresDelCorreo.length){ showAuthErr('register-err','Este correo no está registrado en la academia. Contáctanos para registrarlo.'); return; }
+  }
   $('btn-register').disabled=true;
   try{
-    const cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
-    // Guardar RUTs encontrados en displayName
-    const rutsStr = jugadoresDelCorreo.map(j=>normRut(j.rut)).join('|');
-    await cred.user.updateProfile({displayName: rutsStr});
-    saveRut(email, rutsStr);
+    const cred=await fbAuth.createUserWithEmailAndPassword(email,pass);
+    if(email!==ADMIN_EMAIL){
+      const jugadoresDelCorreo=PLAYERS.filter(p=>(p.correoAp||'').toLowerCase()===email);
+      const rutsStr=jugadoresDelCorreo.map(j=>normRut(j.rut)).join('|');
+      await cred.user.updateProfile({displayName:rutsStr});
+      saveRut(email,rutsStr);
+    }
   }
   catch(e){ showAuthErr('register-err',fbErr(e.code)); }
   $('btn-register').disabled=false;
