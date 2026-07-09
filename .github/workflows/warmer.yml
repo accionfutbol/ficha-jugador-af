@@ -1,0 +1,44 @@
+# .github/workflows/warmer.yml
+# Mantiene el Apps Script "despierto" durante horario activo
+# Ejecuta un ping cada 20 minutos entre las 08:00 y 22:00 (hora Chile, UTC-3)
+
+name: Apps Script Warmer
+
+on:
+  schedule:
+    # Cada 20 min entre 11:00-01:00 UTC (= 08:00-22:00 Chile)
+    - cron: '0,20,40 11-23 * * *'
+    - cron: '0,20,40 0-1 * * *'
+  workflow_dispatch:  # permite ejecutar manualmente
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Warm PLAYERS endpoint
+        run: |
+          echo "🔥 Warming PLAYERS..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 10 \
+            --retry 2 \
+            -H "User-Agent: Mozilla/5.0 (compatible; AFWarmer/1.0)" \
+            "${{ secrets.APPS_SCRIPT_PLAYERS_URL }}")
+          echo "Status: $STATUS"
+          [ "$STATUS" = "200" ] && echo "✅ PLAYERS warm" || echo "⚠️ PLAYERS returned $STATUS"
+
+      - name: Warm PLAN endpoint
+        run: |
+          echo "🔥 Warming PLAN_DATA..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 10 \
+            --retry 2 \
+            -H "User-Agent: Mozilla/5.0 (compatible; AFWarmer/1.0)" \
+            "${{ secrets.APPS_SCRIPT_PLAN_URL }}")
+          echo "Status: $STATUS"
+          [ "$STATUS" = "200" ] && echo "✅ PLAN warm" || echo "⚠️ PLAN returned $STATUS"
+
+      - name: Log result
+        if: always()
+        run: echo "⏱ Warmed at $(date -u '+%Y-%m-%d %H:%M UTC')"
