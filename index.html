@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Consulta la ficha de tu jugador en Acción Fútbol: asistencia, evaluaciones físicas, técnicas y más.">
 <title>Acción Fútbol · Ficha del Jugador</title>
@@ -1732,6 +1733,35 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const fbAuth = firebase.auth();
 fbAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+// ── FCM Messaging ──
+const VAPID_KEY = 'BDyDupiR-LB3Vo5cdCnA6vz485pp8yEOo0qcYwjvnFmGwgXyE7rdCr39VsGamXicmDT4TdA1kDfo-3G_2sbF9RY';
+const API_FCM_TOKEN = 'https://script.google.com/macros/s/AKfycbydPXFJUt5tiJkXSGqbQCgzJ63fJJo134Ng40g7eRtaO5jzipJOyA72GZwbLOOc1wUl/exec';
+let fbMessaging = null;
+
+async function initMessaging(userEmail){
+  try{
+    if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    // Registrar service worker
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    fbMessaging = firebase.messaging();
+    fbMessaging.useServiceWorker(reg);
+    // Pedir permiso
+    const perm = await Notification.requestPermission();
+    if(perm !== 'granted') return;
+    // Obtener token FCM
+    const token = await fbMessaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if(!token) return;
+    // Guardar token en Apps Script (Google Sheets)
+    const saved = localStorage.getItem('af_fcm_token');
+    if(saved === token) return; // ya guardado
+    await fetch(API_FCM_TOKEN + '?action=saveFcmToken&email=' + encodeURIComponent(userEmail) + '&token=' + encodeURIComponent(token));
+    localStorage.setItem('af_fcm_token', token);
+    console.log('[FCM] Token registrado');
+  } catch(e){
+    console.log('[FCM] No disponible:', e.message);
+  }
+}
 let rutAsociado = null;
 let playersListo = false;
 let authListo    = false;
@@ -1880,6 +1910,8 @@ function renderNavHijos(idx){
 fbAuth.onAuthStateChanged(user => {
   authListo=true;
   if(user){
+    // Registrar token FCM para notificaciones push
+    initMessaging(user.email);
     // Modo admin — mostrar buscador completo
     if(user.email.toLowerCase()===ADMIN_EMAIL){
       $('auth-screen').style.display='none';
@@ -1991,17 +2023,11 @@ function badgeEstado(e){
 
 function formatFecha(f){
   if(!f) return '—';
-  try{
-    const d = new Date(f);
-    if(!isNaN(d.getTime())){
-      return d.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
-             .replace(/^\w/,c=>c.toUpperCase());
-    }
-  }catch(_){}
   const s=String(f);
   if(s.includes('-')){
     const p=s.split('-');
     if(p[0].length===4) return p[2]+'/'+p[1]+'/'+p[0];
+    return s;
   }
   return s;
 }
@@ -2072,6 +2098,7 @@ function renderPartidos(partidos, el){
       html+='<div class="partido-stat"><div class="partido-stat-val" style="color:var(--ok)">'+(p.goles||0)+'</div><div class="partido-stat-lbl">Goles</div></div>';
       html+='<div class="partido-stat"><div class="partido-stat-val" style="color:var(--warn)">'+(p.tarjAma||0)+'🟨 '+(p.tarjRoja||0)+'🟥</div><div class="partido-stat-lbl">Tarjetas</div></div>';
       html+='</div>';
+      if(p.nota) html+='<div class="partido-nota">Nota: '+p.nota+'</div>';
       if(p.linkVideo&&p.linkVideo.startsWith('http')) html+='<a class="partido-video" href="'+p.linkVideo+'" target="_blank" rel="noopener">▶ Ver video del partido</a>';
       html+='</div>';
     });
