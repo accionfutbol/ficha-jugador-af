@@ -1742,24 +1742,19 @@ let fbMessaging = null;
 async function initMessaging(userEmail){
   try{
     if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    // Registrar service worker
     const reg = await navigator.serviceWorker.register('/sw.js');
-    fbMessaging = firebase.messaging();
-    fbMessaging.useServiceWorker(reg);
-    // Pedir permiso
     const perm = await Notification.requestPermission();
-    if(perm !== 'granted') return;
-    // Obtener token FCM
+    if(perm !== 'granted'){ console.log('[FCM] Permiso denegado'); return; }
+    fbMessaging = firebase.messaging();
     const token = await fbMessaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
-    if(!token) return;
-    // Guardar token en Apps Script (Google Sheets)
+    if(!token){ console.log('[FCM] Sin token'); return; }
     const saved = localStorage.getItem('af_fcm_token');
-    if(saved === token) return; // ya guardado
+    if(saved === token){ console.log('[FCM] Token ya guardado'); return; }
     await fetch(API_FCM_TOKEN + '?action=saveFcmToken&email=' + encodeURIComponent(userEmail) + '&token=' + encodeURIComponent(token));
     localStorage.setItem('af_fcm_token', token);
-    console.log('[FCM] Token registrado');
+    console.log('[FCM] Token registrado OK');
   } catch(e){
-    console.log('[FCM] No disponible:', e.message);
+    console.log('[FCM] Error:', e.message);
   }
 }
 let rutAsociado = null;
