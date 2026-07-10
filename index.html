@@ -555,6 +555,8 @@ footer strong{color:var(--muted)}
   padding:24px;
 }
 #bday-modal.show{ display:flex; }
+#update-modal{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);padding:24px}
+#update-modal.show{display:flex}
 .bday-card{
   background:linear-gradient(135deg,#1a0a2e,#0c0c0e);
   border:1.5px solid var(--pink);border-radius:24px;
@@ -635,7 +637,7 @@ footer strong{color:var(--muted)}
       <div class="auth-field"><label>Correo electrónico</label><input type="email" id="login-email" placeholder="tu@correo.com" autocomplete="email"></div>
       <div class="auth-field"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
       <button class="auth-btn" id="btn-login" onclick="doLogin()">Ingresar</button>
-      <a class="auth-btn-alt" href="https://forms.gle/QhxQ5Abxv6raZPQL9" target="_blank" rel="noopener">Actualización de Datos</a>
+      <button type="button" class="auth-btn-alt" onclick="abrirUpdate()">Actualización de Datos</button>
       <div class="auth-err" id="login-err"></div>
       <p class="auth-hint">¿Olvidaste tu contraseña?<br><a href="#" onclick="doResetPass()" style="color:var(--pink)">Recuperar por correo</a></p>
     </div>
@@ -885,6 +887,19 @@ footer strong{color:var(--muted)}
       <strong>¡Que disfrutes mucho tu día! 🎉⚽</strong>
     </div>
     <button class="bday-btn" onclick="cerrarBday()">¡Gracias! 🙌</button>
+  </div>
+</div>
+
+<div id="update-modal">
+  <div class="bday-card">
+    <span class="bday-emoji">📝</span>
+    <div class="bday-title">Actualización de Datos</div>
+    <div class="bday-msg">
+      Si no puedes ingresar a la <strong>aplicación</strong>, por favor rellena el siguiente formulario y dentro de <strong>72 horas hábiles</strong> serás activado en el sistema.<br><br>
+      <strong style="color:var(--pink)">Acción Fútbol</strong>
+    </div>
+    <a class="bday-btn" href="https://forms.gle/QhxQ5Abxv6raZPQL9" target="_blank" rel="noopener" onclick="cerrarUpdate()" style="text-decoration:none;display:inline-block">Ir al formulario</a>
+    <div style="margin-top:14px"><a href="#" onclick="cerrarUpdate();return false;" style="color:var(--muted);font-size:13px;text-decoration:none">Cerrar</a></div>
   </div>
 </div>
 
@@ -2068,6 +2083,8 @@ function mostrarBday(nombre){
 function cerrarBday(){
   $('bday-modal').classList.remove('show');
 }
+function abrirUpdate(){ $('update-modal').classList.add('show'); }
+function cerrarUpdate(){ $('update-modal').classList.remove('show'); }
 
 
 /* ══ PARTIDOS ══ */
