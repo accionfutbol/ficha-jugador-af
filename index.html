@@ -2022,11 +2022,16 @@ function badgeEstado(e){
 
 function formatFecha(f){
   if(!f) return '—';
-  const s=String(f);
-  if(s.includes('-')){
-    const p=s.split('-');
-    if(p[0].length===4) return p[2]+'/'+p[1]+'/'+p[0];
-    return s;
+  const s=String(f).trim();
+  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return m[3]+' - '+m[2]+' - '+m[1];
+  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if(m) return m[1].padStart(2,'0')+' - '+m[2].padStart(2,'0')+' - '+m[3];
+  const d=new Date(s);
+  if(!isNaN(d)){
+    const dd=String(d.getDate()).padStart(2,'0');
+    const mm=String(d.getMonth()+1).padStart(2,'0');
+    return dd+' - '+mm+' - '+d.getFullYear();
   }
   return s;
 }
@@ -2097,7 +2102,6 @@ function renderPartidos(partidos, el){
       html+='<div class="partido-stat"><div class="partido-stat-val" style="color:var(--ok)">'+(p.goles||0)+'</div><div class="partido-stat-lbl">Goles</div></div>';
       html+='<div class="partido-stat"><div class="partido-stat-val" style="color:var(--warn)">'+(p.tarjAma||0)+'🟨 '+(p.tarjRoja||0)+'🟥</div><div class="partido-stat-lbl">Tarjetas</div></div>';
       html+='</div>';
-      if(p.nota) html+='<div class="partido-nota">Nota: '+p.nota+'</div>';
       if(p.linkVideo&&p.linkVideo.startsWith('http')) html+='<a class="partido-video" href="'+p.linkVideo+'" target="_blank" rel="noopener">▶ Ver video del partido</a>';
       html+='</div>';
     });
