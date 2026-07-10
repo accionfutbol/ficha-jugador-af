@@ -587,6 +587,12 @@ footer strong{color:var(--muted)}
 .estado-suplente{background:rgba(255,176,32,.15);color:#ffb020;border:1px solid rgba(255,176,32,.3)}
 .estado-ingreso{background:rgba(100,200,255,.15);color:#64c8ff;border:1px solid rgba(100,200,255,.3)}
 .estado-otro{background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+.picker{margin-top:14px;display:flex;flex-direction:column;gap:8px;text-align:left}
+.picker-title{color:var(--muted);font-size:13px;font-family:'Oswald';letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
+.picker-item{display:flex;flex-direction:column;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+.picker-item:hover{border-color:var(--pink);background:var(--panel2)}
+.picker-name{color:var(--ink);font-weight:600;font-size:15px}
+.picker-meta{color:var(--muted);font-size:12px}
 .sec-todo{padding:16px;text-align:center;color:var(--muted);font-family:'Oswald';letter-spacing:.08em;font-size:13px;text-transform:uppercase;background:var(--bg);border-radius:8px}
 .auth-btn-alt{display:block;width:100%;box-sizing:border-box;margin-top:10px;padding:14px;text-align:center;background:transparent;border:1.5px solid var(--pink);color:var(--pink);border-radius:12px;font-family:'Oswald',sans-serif;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:14px;cursor:pointer;text-decoration:none;transition:background .15s,color .15s}
 .auth-btn-alt:hover{background:var(--pink);color:#fff}
@@ -703,11 +709,12 @@ footer strong{color:var(--muted)}
       <div class="search-box">
         <span class="search-ico">⌕</span>
         <input id="q" type="text"
-          placeholder="Ej: 22.123.456-7"
+          placeholder="RUT o nombre del jugador"
           autocomplete="off" spellcheck="false" disabled>
         <button class="btn-search" id="go" disabled>Buscar</button>
       </div>
       <p class="search-hint" id="hint">Cargando base de jugadores…</p>
+      <div class="picker" id="picker" style="display:none"></div>
     </div>
   </div>
 </div>
@@ -885,6 +892,14 @@ footer strong{color:var(--muted)}
     </div>
   </div>
   <main>
+    <div class="search-wrap" id="admin-part-search" style="display:none;margin-bottom:24px">
+      <div class="search-box">
+        <span class="search-ico">⌕</span>
+        <input id="admin-part-q" type="text" placeholder="RUT o nombre del jugador" autocomplete="off" spellcheck="false">
+        <button class="btn-search" id="admin-part-go">Buscar</button>
+      </div>
+      <p class="search-hint">Modo admin · busca los partidos de cualquier jugador por RUT o nombre.</p>
+    </div>
     <div id="partidos-result">
       <div class="loader show"><div class="spin"></div><span>Cargando partidos…</span></div>
     </div>
@@ -1387,12 +1402,39 @@ function showMorosidad(){
   $('morosidad').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function doSearch(){
-  const v=$('q').value.trim(); if(!v) return;
-  const p=findRut(v);
-  if(!p){ notFound(); return; }
+function findPlayers(query){
+  const q=(query||'').trim(); if(!q) return [];
+  const k=norm(q);
+  const byRut=PLAYERS.filter(p=>p.key===k||(k.length>=7&&p.key.startsWith(k)));
+  if(byRut.length) return byRut;
+  const qn=noAcc(q);
+  return PLAYERS.filter(p=>noAcc(p.nombre).includes(qn));
+}
+function seleccionarJugador(p){
+  $('picker').style.display='none';
   if(isMoroso(p)){ showMorosidad(); return; }
   show(p);
+}
+function selectFromPicker(idx){ const p=PLAYERS[idx]; if(p) seleccionarJugador(p); }
+function showPlayerPicker(list){
+  $('ficha').classList.remove('show');
+  $('empty').classList.remove('show');
+  $('morosidad').style.display='none';
+  const items=list.slice(0,25).map(p=>{
+    const idx=PLAYERS.indexOf(p);
+    const meta=[p.rut,p.cat,p.sede].filter(Boolean).join(' · ');
+    return '<button class="picker-item" onclick="selectFromPicker('+idx+')"><span class="picker-name">'+esc(p.nombre)+'</span><span class="picker-meta">'+esc(meta)+'</span></button>';
+  }).join('');
+  const pk=$('picker');
+  pk.innerHTML='<div class="picker-title">'+list.length+' jugadores encontrados</div>'+items;
+  pk.style.display='flex';
+}
+function doSearch(){
+  const v=$('q').value.trim(); if(!v) return;
+  const matches=findPlayers(v);
+  if(!matches.length){ $('picker').style.display='none'; notFound(); return; }
+  if(matches.length===1){ seleccionarJugador(matches[0]); return; }
+  showPlayerPicker(matches);
 }
 
 $('go').onclick=doSearch;
@@ -1400,6 +1442,7 @@ $('q').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
 
 $('clear').onclick=()=>{
   $('q').value='';$('ficha').classList.remove('show');$('empty').classList.remove('show');
+  $('picker')&&($('picker').style.display='none');
   $('morosidad').style.display='none';
   $('q').focus();window.scrollTo({top:0,behavior:'smooth'});
 };
@@ -2015,18 +2058,51 @@ function cerrarBday(){
 
 
 /* ══ PARTIDOS ══ */
+let adminPartTarget=null;
+function esAdmin(){ const u=fbAuth.currentUser; return !!(u && u.email && u.email.toLowerCase()===ADMIN_EMAIL); }
 function showPartidos(){
   $('view-home').style.display='none';
   $('view-ficha').style.display='none';
   $('view-partidos').style.display='block';
   $('logoImgPart').src=LOGO;
   window.scrollTo({top:0});
+  if(esAdmin()){
+    $('admin-part-search').style.display='block';
+    if(adminPartTarget){ loadPartidos(); }
+    else { $('partidos-result').innerHTML='<div class="partidos-empty"><div style="font-size:48px;margin-bottom:14px">🔍</div><p>Busca un jugador por RUT o nombre para ver sus partidos.</p></div>'; }
+  } else {
+    $('admin-part-search').style.display='none';
+    loadPartidos();
+  }
+}
+function adminBuscarPartidos(){
+  const v=$('admin-part-q').value.trim(); if(!v) return;
+  const el=$('partidos-result');
+  const matches=findPlayers(v);
+  if(!matches.length){ el.innerHTML='<div class="partidos-empty"><div style="font-size:48px;margin-bottom:14px">🔍</div><p>No se encontró ningún jugador.</p></div>'; return; }
+  if(matches.length>1){
+    const items=matches.slice(0,25).map(p=>{
+      const meta=[p.rut,p.cat,p.sede].filter(Boolean).join(' · ');
+      return '<button class="picker-item" onclick="adminSelPartido(\''+p.key+'\')"><span class="picker-name">'+esc(p.nombre)+'</span><span class="picker-meta">'+esc(meta)+'</span></button>';
+    }).join('');
+    el.innerHTML='<div class="picker">'+'<div class="picker-title">'+matches.length+' jugadores encontrados</div>'+items+'</div>';
+    return;
+  }
+  adminSelPartido(matches[0].key);
+}
+function adminSelPartido(key){
+  const p=PLAYERS.find(x=>x.key===key); if(!p) return;
+  adminPartTarget={rut:p.rut, correo:p.correoAp||'', nombre:p.nombre};
+  $('admin-part-q').value=p.nombre;
   loadPartidos();
 }
 $('btn-partidos').onclick=showPartidos;
+$('admin-part-go')&&($('admin-part-go').onclick=adminBuscarPartidos);
+$('admin-part-q')&&$('admin-part-q').addEventListener('keydown',e=>{if(e.key==='Enter')adminBuscarPartidos();});
 $('btn-partidos-inicio').onclick=()=>{
   $('view-partidos').style.display='none';
   $('view-home').style.display='flex';
+  if(esAdmin()){ adminPartTarget=null; $('admin-part-q')&&($('admin-part-q').value=''); }
 };
 
 function badgeEstado(e){
@@ -2060,7 +2136,7 @@ async function loadPartidos(){
     const user=fbAuth.currentUser;
     if(!user){ el.innerHTML='<p style="color:var(--warn);text-align:center;padding:30px">Debes iniciar sesión.</p>'; return; }
     const email=user.email.toLowerCase();
-    const cacheKey = CACHE_KEY_PARTIDOS + '_' + btoa(email).slice(0,16);
+    const cacheKey = CACHE_KEY_PARTIDOS + '_' + ((esAdmin()&&adminPartTarget)?('ADM_'+normRut(adminPartTarget.rut)):btoa(email).slice(0,16));
 
     // ── CAPA 2: localStorage ──
     const cached = cacheGet(cacheKey);
@@ -2078,10 +2154,17 @@ async function loadPartidos(){
 }
 
 async function fetchAndUpdatePartidos(user, email, cacheKey, el, background){
-  const ruts=(user.displayName||'').split('|').map(r=>r.trim()).filter(Boolean);
+  let ruts, correo;
+  if(esAdmin() && adminPartTarget){
+    ruts=[normRut(adminPartTarget.rut)].filter(Boolean);
+    correo=adminPartTarget.correo||email;
+  } else {
+    ruts=(user.displayName||'').split('|').map(r=>r.trim()).filter(Boolean);
+    correo=email;
+  }
   const params=new URLSearchParams();
   if(ruts.length) params.set('rut', ruts.join(','));
-  params.set('correo', email);
+  params.set('correo', correo);
   const res=await fetch(API_PARTIDOS+'?'+params.toString(), {cache:'no-store'});
   const data=await res.json();
   if(data.error){ if(!background) el.innerHTML='<p style="color:var(--warn);text-align:center;padding:30px">Error: '+data.error+'</p>'; return; }
