@@ -1198,7 +1198,7 @@ async function fetchAndUpdatePlayers(){
     const tipo=clean(r[C.tipo]);
     if(tipo.toUpperCase()!=='PRO') continue;
     const estadoGen=clean(r[2]).toUpperCase();
-    const PERMITIDOS=['ACTIVO','ACTIVOS','NEW','FULL'];
+    const PERMITIDOS=['ACTIVO','ACTIVOS','NEW','FULL','LESIONADO'];
     if(!PERMITIDOS.includes(estadoGen)) continue;
     const months={};
     for(let m=0;m<12;m++) months[m]=num(r[MES_BASE+m]);
