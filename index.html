@@ -673,6 +673,19 @@ footer strong{color:var(--muted)}
 .foto-meta{font-size:12px;color:var(--muted);margin-top:2px}
 .foto-go{color:var(--pink);font-weight:700;font-size:13px;white-space:nowrap}
 .foto-sel{flex:1;min-width:120px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:14px;color:var(--ink);font-family:inherit}
+.foto-back{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:6px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;margin-top:6px}
+.pcell{padding:0;border:none;background:var(--panel2);border-radius:10px;overflow:hidden;cursor:pointer;aspect-ratio:1/1;display:block}
+.pcell img{width:100%;height:100%;object-fit:cover;display:block}
+.pvid{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;background:#000;text-decoration:none}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:200;display:none;align-items:center;justify-content:center}
+.lb.show{display:flex}
+.lb-img{max-width:92vw;max-height:82vh;object-fit:contain;border-radius:6px}
+.lb-bar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:14px 18px;gap:10px}
+.lb-dl{background:var(--pink);color:#fff;text-decoration:none;border-radius:10px;padding:10px 16px;font-weight:700;font-size:14px}
+.lb-x{background:rgba(255,255,255,.16);border:none;color:#fff;border-radius:50%;width:40px;height:40px;font-size:18px;cursor:pointer}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);border:none;color:#fff;font-size:32px;width:46px;height:62px;cursor:pointer;border-radius:8px}
+.lb-prev{left:10px}.lb-next{right:10px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -947,6 +960,13 @@ footer strong{color:var(--muted)}
   <footer><strong>Acción Fútbol</strong> · Fotos y Videos · Temporada 2026</footer>
 </div>
 
+<div id="lb" class="lb">
+  <div class="lb-bar"><a id="lb-dl" class="lb-dl" href="#" download target="_blank" rel="noopener">⬇ Descargar</a><button id="lb-close" class="lb-x">✕</button></div>
+  <button class="lb-nav lb-prev" id="lb-prev">‹</button>
+  <img id="lb-img" class="lb-img" alt="">
+  <button class="lb-nav lb-next" id="lb-next">›</button>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- ══ PLANIFICACIONES VIEW ══ -->
@@ -1198,16 +1218,55 @@ function renderFotos(albums){
   Object.keys(grupos).forEach(g=>{
     h+='<div class="foto-mesh">'+esc(g)+'</div><div class="foto-grid">';
     grupos[g].forEach(a=>{
-      h+='<a class="foto-card" href="'+esc(a.link)+'" target="_blank" rel="noopener">'+
+      const t=[a.concepto,a.categoria,a.sede].filter(Boolean).join(' · ');
+      h+='<button class="foto-card" data-link="'+esc(a.link)+'" data-title="'+esc(t)+'">'+
          '<div class="foto-ic">📷</div>'+
          '<div class="foto-info"><div class="foto-conc">'+esc(a.concepto||'Álbum')+'</div>'+
          '<div class="foto-meta">'+esc([a.categoria,a.sede].filter(Boolean).join(' · '))+'</div></div>'+
-         '<div class="foto-go">Ver ▸</div></a>';
+         '<div class="foto-go">Ver ▸</div></button>';
     });
     h+='</div>';
   });
   el.innerHTML=h;
+  el.querySelectorAll('.foto-card').forEach(b=>{ b.onclick=()=>abrirAlbum(b.dataset.link, b.dataset.title); });
 }
+let ALBUM=[], LBI=0;
+function backAlbumsBtn(){ return '<button id="foto-volver" class="foto-back">← Volver a álbumes</button>'; }
+function bindBack(){ const b=$('foto-volver'); if(b) b.onclick=()=>{ if(typeof esAdmin==='function'&&esAdmin()){ $('fotos-admin-filter').style.display='block'; cargarFotosAdmin($('fotos-sede').value,$('fotos-cat').value); } else { cargarFotosApoderado(); } }; }
+async function abrirAlbum(link, title){
+  const el=$('fotos-result');
+  if($('fotos-admin-filter')) $('fotos-admin-filter').style.display='none';
+  el.innerHTML='<div class="loader show"><div class="spin"></div><span>Cargando fotos…</span></div>';
+  try{
+    const u=fbAuth.currentUser; const idToken=await u.getIdToken();
+    const q=API_FOTOS+'?action=album&folder='+encodeURIComponent(link)+'&idToken='+encodeURIComponent(idToken);
+    const res=await fetch(q); const data=await res.json();
+    if(data.error){ el.innerHTML=backAlbumsBtn()+'<div class="partidos-empty"><p>'+esc(data.error)+'</p></div>'; bindBack(); return; }
+    renderAlbum(title, data.fotos||[]);
+  }catch(e){ el.innerHTML=backAlbumsBtn()+'<div class="partidos-empty"><p>No se pudieron cargar las fotos.</p></div>'; bindBack(); }
+}
+function renderAlbum(title, fotos){
+  const el=$('fotos-result');
+  ALBUM=fotos.filter(f=>!f.video);
+  let h=backAlbumsBtn()+'<div class="foto-mesh" style="margin-top:8px">'+esc(title||'Álbum')+' · '+fotos.length+' archivo(s)</div>';
+  if(!fotos.length){ el.innerHTML=h+'<div class="partidos-empty"><p>Esta carpeta no tiene fotos visibles. Debe estar compartida como "cualquiera con el enlace".</p></div>'; bindBack(); return; }
+  h+='<div class="pgrid">';
+  let imgIdx=0;
+  fotos.forEach(f=>{
+    if(f.video){ h+='<a class="pcell" href="'+esc(f.view)+'" target="_blank" rel="noopener"><span class="pvid">▶</span></a>'; }
+    else { h+='<button class="pcell" data-i="'+(imgIdx++)+'"><img loading="lazy" src="'+esc(f.thumb)+'" alt=""></button>'; }
+  });
+  h+='</div>';
+  el.innerHTML=h;
+  el.querySelectorAll('.pcell[data-i]').forEach(b=>{ b.onclick=()=>openLightbox(+b.dataset.i); });
+  bindBack();
+}
+function openLightbox(i){ const f=ALBUM[i]; if(!f) return; LBI=i; $('lb-img').src=f.full; $('lb-dl').href=f.download; $('lb').classList.add('show'); }
+function lbNav(d){ if(!ALBUM.length) return; LBI=(LBI+d+ALBUM.length)%ALBUM.length; const f=ALBUM[LBI]; $('lb-img').src=f.full; $('lb-dl').href=f.download; }
+$('lb-close')&&($('lb-close').onclick=()=>$('lb').classList.remove('show'));
+$('lb-prev')&&($('lb-prev').onclick=()=>lbNav(-1));
+$('lb-next')&&($('lb-next').onclick=()=>lbNav(1));
+$('lb')&&($('lb').onclick=(e)=>{ if(e.target.id==='lb') $('lb').classList.remove('show'); });
 $('btn-fotos').onclick = showFotos;
 $('fotos-ver')&&($('fotos-ver').onclick=()=>cargarFotosAdmin($('fotos-sede').value,$('fotos-cat').value));
 $('btn-fotos-inicio')&&($('btn-fotos-inicio').onclick=()=>{ $('view-fotos').style.display='none'; $('view-home').style.display='flex'; });
