@@ -1340,8 +1340,9 @@ function buildIndexes(){
   PLAYERS.forEach(p => {
     IDX_RUT[p.key] = p;
     p._n = noAcc(p.nombre);                 // nombre normalizado (sin acentos/minúsculas) precomputado
-    const c = (p.correoAp||'').toLowerCase().trim();
-    if(c){ if(!IDX_CORREO[c]) IDX_CORREO[c]=[]; IDX_CORREO[c].push(p); }
+    [(p.correoAp||'').toLowerCase().trim(), (p.correoJug||'').toLowerCase().trim()].forEach(c=>{
+      if(c){ if(!IDX_CORREO[c]) IDX_CORREO[c]=[]; if(IDX_CORREO[c].indexOf(p)<0) IDX_CORREO[c].push(p); }
+    });
   });
 }
 
@@ -1371,7 +1372,7 @@ async function fetchAndUpdatePlayers(){
     const months={};
     for(let m=0;m<12;m++) months[m]=num(r[MES_BASE+m]);
     out.push({rut,nombre,nac:fdate(r[C.nac]),edad:num(r[C.edad]),
-      sede:clean(r[C.sede]),cat:clean(r[C.cat]),pos:clean(r[C.pos]),pie:clean(r[C.pie]),correoAp:clean(r[26]).toLowerCase().trim(),
+      sede:clean(r[C.sede]),cat:clean(r[C.cat]),pos:clean(r[C.pos]),pie:clean(r[C.pie]),correoAp:clean(r[26]).toLowerCase().trim(),correoJug:clean(r[22]).toLowerCase().trim(),
       torneo:clean(r[C.torneo]),foto:clean(r[C.foto]),
       pagoMens:clean(r[C.pagoMens]),nMor:num(r[C.nMor]),
       part:num(r[C.part]),min:num(r[C.min]),
@@ -2310,8 +2311,8 @@ function segmentoActual(){
 }
 function segmentoDeTipo(tipo){
   const t=String(tipo||'').toUpperCase();
-  if(t.indexOf('SENIOR')>=0) return 'SENIORS';
   if(t.indexOf('KID')>=0) return 'KIDS';
+  if(t.indexOf('ADULT')>=0 || t.indexOf('SENIOR')>=0) return 'SENIORS';
   if(t.indexOf('PRO')>=0) return 'PRO';
   return '';
 }
