@@ -683,6 +683,9 @@ footer strong{color:var(--muted)}
 .cal-legend{display:flex;gap:14px;justify-content:center;font-size:11px;color:var(--muted);margin-top:6px}
 .cal-legend span{display:inline-flex;align-items:center;gap:5px}
 .cal-dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+.cal-turnos{display:flex;gap:10px;margin-bottom:18px}
+.cal-t{flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--line);background:rgba(18,18,22,.72);color:var(--muted);font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;letter-spacing:.05em;cursor:pointer;text-transform:uppercase}
+.cal-t.on{background:var(--pink);border-color:var(--pink);color:#fff}
 .foto-mesh{font-family:'Oswald',sans-serif;font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--pink);margin:20px 0 9px}
 .foto-card{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:inherit;transition:.15s}
 .foto-card:hover{border-color:var(--pink)}
@@ -1376,44 +1379,50 @@ function renderMiAsist(el,nombre,turnos){
 }
 
 /* Calendario de Entrenamientos */
+let CAL_FECHAS=[], CAL_TURNO='AM';
 async function showCalendario(){
   abrirVistaSenior('view-calendario'); $('calLogo').src=LOGO;
   const el=$('cal-result'); el.innerHTML=srLoader();
-  try{ const d=await apiFotos('srcalendario',''); renderCalendario(el,d.fechas||[]); }
+  try{ const d=await apiFotos('srcalendario',''); CAL_FECHAS=d.fechas||[]; renderCalendario(); }
   catch(e){ el.innerHTML=srEmpty('No se pudo cargar el calendario.'); }
 }
-function renderCalendario(el,fechas){
-  if(!fechas.length){ el.innerHTML=srEmpty('Aún no hay fechas cargadas.'); return; }
+function renderCalendario(){
+  const el=$('cal-result');
   const NM=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const meses={};
-  fechas.forEach(f=>{
-    const p=String(f.fecha).split('-'); const d=+p[0], m=+p[1], y=+p[2];
-    if(!d||!m||!y) return;
-    const key=y*100+m;
-    const M=meses[key]=meses[key]||{y,m,dias:{}};
-    const cell=M.dias[d]=M.dias[d]||{AM:false,PM:false};
-    if(String(f.turno).toUpperCase().indexOf('PM')>=0) cell.PM=true; else cell.AM=true;
-  });
   const hoy=new Date();
-  const keys=Object.keys(meses).map(Number).sort((a,b)=>a-b);
-  let h='<div class="cal-legend"><span><i class="cal-dot" style="background:var(--ok)"></i>AM</span><span><i class="cal-dot" style="background:var(--blue)"></i>PM</span><span><i class="cal-dot" style="background:rgba(255,46,147,.5)"></i>Entrenamiento</span></div>';
-  keys.forEach(k=>{
-    const M=meses[k], y=M.y, m=M.m;
-    const firstDow=(new Date(y,m-1,1).getDay()+6)%7; // Lunes=0
+  // Mes presente + mes siguiente
+  const months=[{y:hoy.getFullYear(), m:hoy.getMonth()+1}];
+  let ny=months[0].y, nm=months[0].m+1; if(nm>12){ nm=1; ny++; }
+  months.push({y:ny, m:nm});
+  // Días de entrenamiento del turno elegido
+  const dmap={};
+  CAL_FECHAS.filter(f=>String(f.turno).toUpperCase()===CAL_TURNO).forEach(f=>{
+    const p=String(f.fecha).split('-'); const d=+p[0], m=+p[1], y=+p[2]; if(!d) return;
+    (dmap[y+'-'+m]=dmap[y+'-'+m]||{})[d]=true;
+  });
+  const chipCls=CAL_TURNO==='AM'?'am':'pm';
+  let h='<div class="cal-turnos">'+
+        '<button class="cal-t'+(CAL_TURNO==='AM'?' on':'')+'" data-t="AM">Senior AM</button>'+
+        '<button class="cal-t'+(CAL_TURNO==='PM'?' on':'')+'" data-t="PM">Senior PM</button></div>';
+  let hayAlguno=false;
+  months.forEach(mm=>{
+    const y=mm.y, m=mm.m, dias=dmap[y+'-'+m]||{};
+    if(Object.keys(dias).length) hayAlguno=true;
+    const firstDow=(new Date(y,m-1,1).getDay()+6)%7;
     const ndays=new Date(y,m,0).getDate();
     h+='<div class="cal-card"><div class="cal-title">'+NM[m].toUpperCase()+' <span>'+y+'</span></div><div class="cal-grid">';
     ['L','M','X','J','V','S','D'].forEach(dd=>h+='<div class="cal-dow">'+dd+'</div>');
     for(let i=0;i<firstDow;i++) h+='<div class="cal-cell empty"></div>';
     for(let d=1;d<=ndays;d++){
-      const c=M.dias[d];
+      const tr=dias[d];
       const isHoy=(hoy.getFullYear()===y&&hoy.getMonth()+1===m&&hoy.getDate()===d);
-      let cls='cal-cell'+(c?' train':'')+(isHoy?' hoy':'');
-      let chips=''; if(c){ if(c.AM)chips+='<span class="cal-chip am">AM</span>'; if(c.PM)chips+='<span class="cal-chip pm">PM</span>'; }
-      h+='<div class="'+cls+'"><span class="cal-num">'+d+'</span>'+chips+'</div>';
+      h+='<div class="cal-cell'+(tr?' train':'')+(isHoy?' hoy':'')+'"><span class="cal-num">'+d+'</span>'+(tr?'<span class="cal-chip '+chipCls+'">'+CAL_TURNO+'</span>':'')+'</div>';
     }
     h+='</div></div>';
   });
+  if(!hayAlguno) h+='<div style="text-align:center;color:var(--muted);font-size:13px;margin-top:6px">No hay entrenamientos '+CAL_TURNO+' cargados para estos meses.</div>';
   el.innerHTML=h;
+  el.querySelectorAll('.cal-t').forEach(b=>b.onclick=()=>{ CAL_TURNO=b.dataset.t; renderCalendario(); });
 }
 
 /* Citación Partidos Amistosos */
