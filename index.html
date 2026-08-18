@@ -1293,9 +1293,14 @@ async function cargarFotosApoderado(){
   let videosHTML='';
   if(segmentoActual()==='SENIORS'){
     try{
+      let turnos=[];
+      const jug=jugadoresAsociados(); const nombre=jug.length?jug[0].nombre:'';
+      if(nombre){ const a=await apiFotos('srmiasist','&nombre='+encodeURIComponent(nombre)); turnos=(a.turnos||[]).map(t=>String(t.turno).toUpperCase()); }
       const rv=await fetch(API_FOTOS+'?action=srvideos&idToken='+encodeURIComponent(idToken));
       const dv=await rv.json();
-      if(dv.videos && dv.videos.length) videosHTML=renderSrVideos(dv.videos);
+      let vids=dv.videos||[];
+      if(turnos.length) vids=vids.filter(v=>turnos.includes(String(v.turno).toUpperCase()));  // solo el turno del jugador
+      if(vids.length) videosHTML=renderSrVideos(vids);
     }catch(e){}
   }
   renderFotos(uniq, videosHTML);
