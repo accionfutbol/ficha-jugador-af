@@ -1525,7 +1525,11 @@ function renderFotos(albums,prepend){
   const el=$('fotos-result');
   prepend=prepend||'';
   if(!albums.length && !prepend){ el.innerHTML='<div class="partidos-empty"><div style="font-size:48px;margin-bottom:14px">📷</div><p>Aún no hay álbumes disponibles.</p></div>'; return; }
-  if(!albums.length){ el.innerHTML=prepend; return; }
+  if(!albums.length){
+    el.innerHTML=prepend;
+    el.querySelectorAll('.foto-card[data-link]').forEach(b=>{ b.onclick=()=>abrirAlbum(b.dataset.link, b.dataset.title); });
+    return;
+  }
   const grupos={};
   albums.forEach(a=>{ const g=(a.mes||'Otros'); (grupos[g]=grupos[g]||[]).push(a); });
   let h='';
