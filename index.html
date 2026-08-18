@@ -769,11 +769,11 @@ footer strong{color:var(--muted)}
         <span class="home-btn-icon">📋</span>
         <span>Ficha Jugador</span>
       </button>
-      <button class="home-btn home-btn-ghost" id="btn-partidos">
+      <button class="home-btn home-btn-ghost" id="btn-partidos" style="display:none">
         <span class="home-btn-icon">⚽</span>
         <span>Detalles de Partidos</span>
       </button>
-      <button class="home-btn home-btn-ghost" id="btn-planificaciones">
+      <button class="home-btn home-btn-ghost" id="btn-planificaciones" style="display:none">
         <span class="home-btn-icon">📅</span>
         <span>Planificaciones</span>
       </button>
@@ -789,6 +789,10 @@ footer strong{color:var(--muted)}
         <span class="home-btn-icon">📣</span>
         <span>Citación Partidos Amistosos</span>
       </button>
+      <a class="home-btn home-btn-ghost" id="btn-ig-senior" href="https://www.instagram.com/accionfutbolsenior?igsh=MThkMTVnaDRrdm51cA==" target="_blank" rel="noopener" style="display:none;text-decoration:none">
+        <span class="home-btn-icon">📸</span>
+        <span>Instagram Acción Fútbol Senior</span>
+      </a>
       <button class="home-btn home-btn-ghost" id="btn-fotos">
         <span class="home-btn-icon">📷</span>
         <span>Fotos y Videos</span>
@@ -797,11 +801,11 @@ footer strong{color:var(--muted)}
         <span class="home-btn-icon">👕</span>
         <span>Solicitud de Indumentaria</span>
       </button>
-      <a class="home-btn home-btn-ghost" id="btn-gira" href="https://bit.ly/m/lagiraaccionfutbolbuenosairescup2026" target="_blank" rel="noopener" style="text-decoration:none">
+      <a class="home-btn home-btn-ghost" id="btn-gira" href="https://bit.ly/m/lagiraaccionfutbolbuenosairescup2026" target="_blank" rel="noopener" style="display:none;text-decoration:none">
         <span class="home-btn-icon">✈️</span>
         <span>Gira Buenos Aires Cup 2026</span>
       </a>
-      <a class="home-btn home-btn-ghost" id="btn-charla" href="https://bit.ly/charlaspodcastaccionfutbolpro" target="_blank" rel="noopener" style="text-decoration:none">
+      <a class="home-btn home-btn-ghost" id="btn-charla" href="https://bit.ly/charlaspodcastaccionfutbolpro" target="_blank" rel="noopener" style="display:none;text-decoration:none">
         <span class="home-btn-icon">🎙️</span>
         <span>Charla y Podcast Tiempo Extra - Acción Fútbol</span>
       </a>
@@ -1336,7 +1340,7 @@ function ajustarMenuSegmento(){
   const sr = (typeof segmentoActual==='function' && segmentoActual()==='SENIORS');
   const isAdmin = (typeof esAdmin==='function' && esAdmin());
   const show=(id,on)=>{ const el=$(id); if(el) el.style.display = on ? '' : 'none'; };
-  ['btn-miasist','btn-calendario','btn-citaciones'].forEach(id=>show(id, sr||isAdmin));
+  ['btn-miasist','btn-calendario','btn-citaciones','btn-ig-senior'].forEach(id=>show(id, sr||isAdmin));
   ['btn-partidos','btn-planificaciones','btn-gira','btn-charla'].forEach(id=>show(id, !sr||isAdmin));
 }
 function abrirVistaSenior(id){
@@ -1386,18 +1390,19 @@ function renderMiAsist(el,nombre,turnos){
 }
 
 /* Calendario de Entrenamientos */
-let CAL_FECHAS=[], CAL_TURNO='AM', CAL_ASIST={AM:{},PM:{}};
+let CAL_FECHAS=[], CAL_TURNO='AM', CAL_ASIST={AM:{},PM:{}}, CAL_TURNOS=[];
 async function showCalendario(){
   abrirVistaSenior('view-calendario'); $('calLogo').src=LOGO;
   const el=$('cal-result'); el.innerHTML=srLoader();
   const jug=jugadoresAsociados(); const nombre=jug.length?jug[0].nombre:'';
   try{
     const d=await apiFotos('srcalendario',''); CAL_FECHAS=d.fechas||[];
-    CAL_ASIST={AM:{},PM:{}};
+    CAL_ASIST={AM:{},PM:{}}; CAL_TURNOS=[];
     if(nombre){
       const a=await apiFotos('srmiasist','&nombre='+encodeURIComponent(nombre));
-      (a.turnos||[]).forEach(t=>{ const map={}; (t.dias||[]).forEach(dd=>{ map[dd.fecha]=(dd.marca||'').toUpperCase(); }); CAL_ASIST[t.turno]=map; });
+      (a.turnos||[]).forEach(t=>{ const map={}; (t.dias||[]).forEach(dd=>{ map[dd.fecha]=(dd.marca||'').toUpperCase(); }); CAL_ASIST[t.turno]=map; CAL_TURNOS.push(t.turno); });
     }
+    if(CAL_TURNOS.length) CAL_TURNO=CAL_TURNOS[0];   // muestra el turno del jugador
     renderCalendario();
   }catch(e){ el.innerHTML=srEmpty('No se pudo cargar el calendario.'); }
 }
@@ -1418,9 +1423,15 @@ function renderCalendario(){
   const asis=CAL_ASIST[CAL_TURNO]||{};
   const f2=(d,m,y)=>('0'+d).slice(-2)+'-'+('0'+m).slice(-2)+'-'+y;
   const hoy0=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()).getTime();
-  let h='<div class="cal-turnos">'+
+  const mostrarToggle = (CAL_TURNOS.length!==1); // 1 turno => fijo; 0 (admin) o 2 => selector
+  let h='';
+  if(mostrarToggle){
+    h+='<div class="cal-turnos">'+
         '<button class="cal-t'+(CAL_TURNO==='AM'?' on':'')+'" data-t="AM">Senior AM</button>'+
         '<button class="cal-t'+(CAL_TURNO==='PM'?' on':'')+'" data-t="PM">Senior PM</button></div>';
+  } else {
+    h+='<div class="cal-turnos"><div class="cal-t on" style="cursor:default">Senior '+CAL_TURNO+'</div></div>';
+  }
 
   // Resumen del mes presente
   const pm=months[0], diasPres=dmap[pm.y+'-'+pm.m]||{};
@@ -1459,7 +1470,7 @@ function renderCalendario(){
   });
   if(!hayAlguno) h+='<div style="text-align:center;color:var(--muted);font-size:13px;margin-top:6px">No hay entrenamientos '+CAL_TURNO+' cargados para estos meses.</div>';
   el.innerHTML=h;
-  el.querySelectorAll('.cal-t').forEach(b=>b.onclick=()=>{ CAL_TURNO=b.dataset.t; renderCalendario(); });
+  el.querySelectorAll('.cal-t[data-t]').forEach(b=>b.onclick=()=>{ CAL_TURNO=b.dataset.t; renderCalendario(); });
 }
 
 /* Citación Partidos Amistosos */
@@ -2503,6 +2514,7 @@ fbAuth.onAuthStateChanged(async user => {
     }
     // Cargar la base SOLO ahora (con token). El servidor devuelve solo lo permitido.
     await load();
+    try{ ajustarMenuSegmento(); }catch(e){}
     if(isAdmin){
       $('hint').innerHTML=`<b>ADMIN</b> · ${PLAYERS.length?PLAYERS.length.toLocaleString('es-CL')+' jugadores':'Sin datos'}`;
     } else {
