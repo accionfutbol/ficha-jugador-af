@@ -1194,7 +1194,13 @@ async function cargarFotosAdmin(sede,cat){
   const idToken=await u.getIdToken();
   const r=await fetchFotos(idToken,sede||'',cat||'');
   if(r.error){ $('fotos-result').innerHTML='<div class="partidos-empty"><p>No se pudieron cargar los álbumes ('+r.error+').</p></div>'; return; }
-  renderFotos(r.fotos);
+  let videosHTML='';
+  try{
+    const rv=await fetch(API_FOTOS+'?action=srvideos&idToken='+encodeURIComponent(idToken));
+    const dv=await rv.json();
+    if(dv.videos && dv.videos.length) videosHTML=renderSrVideos(dv.videos);
+  }catch(e){}
+  renderFotos(r.fotos, videosHTML);
 }
 async function cargarFotosApoderado(){
   const el=$('fotos-result'); fotosLoading();
