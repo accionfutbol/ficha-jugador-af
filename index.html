@@ -679,7 +679,14 @@ footer strong{color:var(--muted)}
 .cal-cell.hoy{outline:2px solid var(--pink);outline-offset:-2px}
 .cal-chip{font-size:8px;font-weight:800;border-radius:4px;padding:0 4px;margin-top:3px;line-height:1.5}
 .cal-chip.am{background:var(--ok);color:#04231a}
-.cal-chip.pm{background:var(--blue);color:#04202a}
+.cal-chip.pm{background:var(--ok);color:#04231a}
+.cal-chip.ok{background:var(--ok);color:#04231a}
+.cal-cell.asistido{background:rgba(39,194,129,.22);border-color:var(--ok)}
+.cal-check{font-size:8px;font-weight:800;color:var(--ok);margin-top:3px;text-align:center;line-height:1.1}
+.cal-sum{display:flex;gap:10px;margin-bottom:16px}
+.cal-sum .box{flex:1;background:rgba(18,18,22,.75);border:1px solid var(--line);border-radius:12px;padding:12px 8px;text-align:center}
+.cal-sum .box .v{font-family:'Oswald',sans-serif;font-size:26px;font-weight:700}
+.cal-sum .box .l{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
 .cal-legend{display:flex;gap:14px;justify-content:center;font-size:11px;color:var(--muted);margin-top:6px}
 .cal-legend span{display:inline-flex;align-items:center;gap:5px}
 .cal-dot{width:10px;height:10px;border-radius:3px;display:inline-block}
@@ -1379,12 +1386,20 @@ function renderMiAsist(el,nombre,turnos){
 }
 
 /* Calendario de Entrenamientos */
-let CAL_FECHAS=[], CAL_TURNO='AM';
+let CAL_FECHAS=[], CAL_TURNO='AM', CAL_ASIST={AM:{},PM:{}};
 async function showCalendario(){
   abrirVistaSenior('view-calendario'); $('calLogo').src=LOGO;
   const el=$('cal-result'); el.innerHTML=srLoader();
-  try{ const d=await apiFotos('srcalendario',''); CAL_FECHAS=d.fechas||[]; renderCalendario(); }
-  catch(e){ el.innerHTML=srEmpty('No se pudo cargar el calendario.'); }
+  const jug=jugadoresAsociados(); const nombre=jug.length?jug[0].nombre:'';
+  try{
+    const d=await apiFotos('srcalendario',''); CAL_FECHAS=d.fechas||[];
+    CAL_ASIST={AM:{},PM:{}};
+    if(nombre){
+      const a=await apiFotos('srmiasist','&nombre='+encodeURIComponent(nombre));
+      (a.turnos||[]).forEach(t=>{ const map={}; (t.dias||[]).forEach(dd=>{ map[dd.fecha]=(dd.marca||'').toUpperCase(); }); CAL_ASIST[t.turno]=map; });
+    }
+    renderCalendario();
+  }catch(e){ el.innerHTML=srEmpty('No se pudo cargar el calendario.'); }
 }
 function renderCalendario(){
   const el=$('cal-result');
@@ -1400,10 +1415,27 @@ function renderCalendario(){
     const p=String(f.fecha).split('-'); const d=+p[0], m=+p[1], y=+p[2]; if(!d) return;
     (dmap[y+'-'+m]=dmap[y+'-'+m]||{})[d]=true;
   });
-  const chipCls=CAL_TURNO==='AM'?'am':'pm';
+  const asis=CAL_ASIST[CAL_TURNO]||{};
+  const f2=(d,m,y)=>('0'+d).slice(-2)+'-'+('0'+m).slice(-2)+'-'+y;
+  const hoy0=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()).getTime();
   let h='<div class="cal-turnos">'+
         '<button class="cal-t'+(CAL_TURNO==='AM'?' on':'')+'" data-t="AM">Senior AM</button>'+
         '<button class="cal-t'+(CAL_TURNO==='PM'?' on':'')+'" data-t="PM">Senior PM</button></div>';
+
+  // Resumen del mes presente
+  const pm=months[0], diasPres=dmap[pm.y+'-'+pm.m]||{};
+  let asistidos=0, restantes=0;
+  Object.keys(diasPres).forEach(dStr=>{
+    const d=+dStr; const key=f2(d,pm.m,pm.y);
+    const dt=new Date(pm.y,pm.m-1,d).getTime();
+    if(asis[key]==='OK') asistidos++;
+    else if(dt>=hoy0) restantes++;
+  });
+  h+='<div class="cal-sum">'+
+     '<div class="box"><div class="v" style="color:var(--ok)">'+asistidos+'</div><div class="l">Asistidos ('+NM[pm.m]+')</div></div>'+
+     '<div class="box"><div class="v" style="color:var(--pink)">'+restantes+'</div><div class="l">Por asistir ('+NM[pm.m]+')</div></div>'+
+     '</div>';
+
   let hayAlguno=false;
   months.forEach(mm=>{
     const y=mm.y, m=mm.m, dias=dmap[y+'-'+m]||{};
@@ -1416,7 +1448,12 @@ function renderCalendario(){
     for(let d=1;d<=ndays;d++){
       const tr=dias[d];
       const isHoy=(hoy.getFullYear()===y&&hoy.getMonth()+1===m&&hoy.getDate()===d);
-      h+='<div class="cal-cell'+(tr?' train':'')+(isHoy?' hoy':'')+'"><span class="cal-num">'+d+'</span>'+(tr?'<span class="cal-chip '+chipCls+'">'+CAL_TURNO+'</span>':'')+'</div>';
+      const asistio=tr && asis[f2(d,m,y)]==='OK';
+      let cls='cal-cell'+(tr?' train':'')+(asistio?' asistido':'')+(isHoy?' hoy':'');
+      let extra='';
+      if(asistio) extra='<span class="cal-check">✓ ASISTIÓ</span>';
+      else if(tr) extra='<span class="cal-chip ok">'+CAL_TURNO+'</span>';
+      h+='<div class="'+cls+'"><span class="cal-num">'+d+'</span>'+extra+'</div>';
     }
     h+='</div></div>';
   });
