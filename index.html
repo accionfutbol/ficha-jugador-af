@@ -664,6 +664,25 @@ footer strong{color:var(--muted)}
 .pg .pcard .v{font-family:'Oswald';font-weight:700;font-size:32px;color:var(--pink)}
 .pg .pcard .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
 .foto-grid{display:flex;flex-direction:column;gap:11px}
+/* Calendario Senior tipo almanaque */
+#view-calendario{--cal-bg:url('/calendario-bg.jpg');}
+#view-calendario main{background:linear-gradient(rgba(12,12,14,.90),rgba(12,12,14,.94)),var(--cal-bg);background-size:cover;background-position:center;background-attachment:fixed;border-radius:18px}
+.cal-card{position:relative;background:rgba(18,18,22,.72);backdrop-filter:blur(2px);border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:16px 14px;margin-bottom:18px}
+.cal-title{font-family:'Oswald',sans-serif;font-weight:700;font-size:24px;text-transform:uppercase;text-align:center;margin-bottom:14px;letter-spacing:.03em}
+.cal-title span{color:var(--pink)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;padding-bottom:4px}
+.cal-cell{position:relative;min-height:48px;border-radius:8px;border:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;align-items:center;padding:4px 2px;background:rgba(255,255,255,.03)}
+.cal-cell.empty{background:transparent;border:none}
+.cal-num{font-size:13px;font-weight:600}
+.cal-cell.train{background:rgba(255,46,147,.16);border-color:rgba(255,46,147,.45)}
+.cal-cell.hoy{outline:2px solid var(--pink);outline-offset:-2px}
+.cal-chip{font-size:8px;font-weight:800;border-radius:4px;padding:0 4px;margin-top:3px;line-height:1.5}
+.cal-chip.am{background:var(--ok);color:#04231a}
+.cal-chip.pm{background:var(--blue);color:#04202a}
+.cal-legend{display:flex;gap:14px;justify-content:center;font-size:11px;color:var(--muted);margin-top:6px}
+.cal-legend span{display:inline-flex;align-items:center;gap:5px}
+.cal-dot{width:10px;height:10px;border-radius:3px;display:inline-block}
 .foto-mesh{font-family:'Oswald',sans-serif;font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--pink);margin:20px 0 9px}
 .foto-card{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:inherit;transition:.15s}
 .foto-card:hover{border-color:var(--pink)}
@@ -1365,17 +1384,35 @@ async function showCalendario(){
 }
 function renderCalendario(el,fechas){
   if(!fechas.length){ el.innerHTML=srEmpty('Aún no hay fechas cargadas.'); return; }
-  const prox=fechas.filter(f=>f.futuro), pas=fechas.filter(f=>!f.futuro).reverse();
-  const card=f=>'<div style="display:flex;justify-content:space-between;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px">'+
-    '<span style="font-weight:600">'+esc(f.fecha)+'</span>'+
-    '<span style="font-family:Oswald;font-weight:700;color:var(--pink)">SENIOR '+esc(f.turno)+'</span></div>';
-  let h='';
-  h+='<div style="font-family:Oswald;font-weight:700;text-transform:uppercase;color:var(--pink);margin:4px 0 10px">Próximos entrenamientos ('+prox.length+')</div>';
-  h+= prox.length? prox.map(card).join('') : srEmpty('No hay próximos entrenamientos programados.');
-  if(pas.length){
-    h+='<div style="font-family:Oswald;font-weight:700;text-transform:uppercase;color:var(--muted);margin:18px 0 10px">Anteriores</div>';
-    h+=pas.slice(0,40).map(card).join('');
-  }
+  const NM=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const meses={};
+  fechas.forEach(f=>{
+    const p=String(f.fecha).split('-'); const d=+p[0], m=+p[1], y=+p[2];
+    if(!d||!m||!y) return;
+    const key=y*100+m;
+    const M=meses[key]=meses[key]||{y,m,dias:{}};
+    const cell=M.dias[d]=M.dias[d]||{AM:false,PM:false};
+    if(String(f.turno).toUpperCase().indexOf('PM')>=0) cell.PM=true; else cell.AM=true;
+  });
+  const hoy=new Date();
+  const keys=Object.keys(meses).map(Number).sort((a,b)=>a-b);
+  let h='<div class="cal-legend"><span><i class="cal-dot" style="background:var(--ok)"></i>AM</span><span><i class="cal-dot" style="background:var(--blue)"></i>PM</span><span><i class="cal-dot" style="background:rgba(255,46,147,.5)"></i>Entrenamiento</span></div>';
+  keys.forEach(k=>{
+    const M=meses[k], y=M.y, m=M.m;
+    const firstDow=(new Date(y,m-1,1).getDay()+6)%7; // Lunes=0
+    const ndays=new Date(y,m,0).getDate();
+    h+='<div class="cal-card"><div class="cal-title">'+NM[m].toUpperCase()+' <span>'+y+'</span></div><div class="cal-grid">';
+    ['L','M','X','J','V','S','D'].forEach(dd=>h+='<div class="cal-dow">'+dd+'</div>');
+    for(let i=0;i<firstDow;i++) h+='<div class="cal-cell empty"></div>';
+    for(let d=1;d<=ndays;d++){
+      const c=M.dias[d];
+      const isHoy=(hoy.getFullYear()===y&&hoy.getMonth()+1===m&&hoy.getDate()===d);
+      let cls='cal-cell'+(c?' train':'')+(isHoy?' hoy':'');
+      let chips=''; if(c){ if(c.AM)chips+='<span class="cal-chip am">AM</span>'; if(c.PM)chips+='<span class="cal-chip pm">PM</span>'; }
+      h+='<div class="'+cls+'"><span class="cal-num">'+d+'</span>'+chips+'</div>';
+    }
+    h+='</div></div>';
+  });
   el.innerHTML=h;
 }
 
