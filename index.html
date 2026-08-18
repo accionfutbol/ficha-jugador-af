@@ -748,6 +748,18 @@ footer strong{color:var(--muted)}
         <span class="home-btn-icon">📅</span>
         <span>Planificaciones</span>
       </button>
+      <button class="home-btn home-btn-ghost" id="btn-miasist" style="display:none">
+        <span class="home-btn-icon">✅</span>
+        <span>Mi Asistencia AM/PM</span>
+      </button>
+      <button class="home-btn home-btn-ghost" id="btn-calendario" style="display:none">
+        <span class="home-btn-icon">🗓️</span>
+        <span>Calendario de Entrenamientos</span>
+      </button>
+      <button class="home-btn home-btn-ghost" id="btn-citaciones" style="display:none">
+        <span class="home-btn-icon">📣</span>
+        <span>Citación Partidos Amistosos</span>
+      </button>
       <button class="home-btn home-btn-ghost" id="btn-fotos">
         <span class="home-btn-icon">📷</span>
         <span>Fotos y Videos</span>
@@ -756,11 +768,11 @@ footer strong{color:var(--muted)}
         <span class="home-btn-icon">👕</span>
         <span>Solicitud de Indumentaria</span>
       </button>
-      <a class="home-btn home-btn-ghost" href="https://bit.ly/m/lagiraaccionfutbolbuenosairescup2026" target="_blank" rel="noopener" style="text-decoration:none">
+      <a class="home-btn home-btn-ghost" id="btn-gira" href="https://bit.ly/m/lagiraaccionfutbolbuenosairescup2026" target="_blank" rel="noopener" style="text-decoration:none">
         <span class="home-btn-icon">✈️</span>
         <span>Gira Buenos Aires Cup 2026</span>
       </a>
-      <a class="home-btn home-btn-ghost" href="https://bit.ly/charlaspodcastaccionfutbolpro" target="_blank" rel="noopener" style="text-decoration:none">
+      <a class="home-btn home-btn-ghost" id="btn-charla" href="https://bit.ly/charlaspodcastaccionfutbolpro" target="_blank" rel="noopener" style="text-decoration:none">
         <span class="home-btn-icon">🎙️</span>
         <span>Charla y Podcast Tiempo Extra - Acción Fútbol</span>
       </a>
@@ -961,6 +973,36 @@ footer strong{color:var(--muted)}
   <footer><strong>Acción Fútbol</strong> · Fotos y Videos · Temporada 2026</footer>
 </div>
 
+<!-- ══ MI ASISTENCIA (Senior) ══ -->
+<div id="view-miasist" style="display:none">
+  <div class="hero-wrap"><nav>
+    <div class="logo-wrap"><img class="logo-img" id="miaLogo" alt="Acción Fútbol"><div class="brand"><b>Acción Fútbol</b><span>Mi Asistencia</span></div></div>
+    <a class="back-link" id="btn-mia-inicio" style="margin-left:auto">← Inicio</a>
+  </nav><div class="hero-content"><div class="eyebrow">Senior</div><h1>Mi <em>Asistencia</em></h1><p class="subtitle">Tu registro de entrenamientos AM y PM.</p></div></div>
+  <main><div id="mia-result"><div class="loader show"><div class="spin"></div><span>Cargando…</span></div></div></main>
+  <footer><strong>Acción Fútbol</strong> · Temporada 2026</footer>
+</div>
+
+<!-- ══ CALENDARIO DE ENTRENAMIENTOS (Senior) ══ -->
+<div id="view-calendario" style="display:none">
+  <div class="hero-wrap"><nav>
+    <div class="logo-wrap"><img class="logo-img" id="calLogo" alt="Acción Fútbol"><div class="brand"><b>Acción Fútbol</b><span>Calendario</span></div></div>
+    <a class="back-link" id="btn-cal-inicio" style="margin-left:auto">← Inicio</a>
+  </nav><div class="hero-content"><div class="eyebrow">Senior</div><h1>Calendario de <em>Entrenamientos</em></h1><p class="subtitle">Fechas de entrenamiento AM y PM.</p></div></div>
+  <main><div id="cal-result"><div class="loader show"><div class="spin"></div><span>Cargando…</span></div></div></main>
+  <footer><strong>Acción Fútbol</strong> · Temporada 2026</footer>
+</div>
+
+<!-- ══ CITACIÓN PARTIDOS AMISTOSOS (Senior) ══ -->
+<div id="view-citaciones" style="display:none">
+  <div class="hero-wrap"><nav>
+    <div class="logo-wrap"><img class="logo-img" id="citLogo" alt="Acción Fútbol"><div class="brand"><b>Acción Fútbol</b><span>Citaciones</span></div></div>
+    <a class="back-link" id="btn-cit-inicio" style="margin-left:auto">← Inicio</a>
+  </nav><div class="hero-content"><div class="eyebrow">Senior</div><h1>Citación <em>Partidos Amistosos</em></h1><p class="subtitle">Revisa si estás citado y los datos del partido.</p></div></div>
+  <main><div id="cit-result"><div class="loader show"><div class="spin"></div><span>Cargando…</span></div></div></main>
+  <footer><strong>Acción Fútbol</strong> · Temporada 2026</footer>
+</div>
+
 <div id="lb" class="lb">
   <div class="lb-bar"><a id="lb-dl" class="lb-dl" href="#" download target="_blank" rel="noopener">⬇ Descargar</a><button id="lb-close" class="lb-x">✕</button></div>
   <button class="lb-nav lb-prev" id="lb-prev">‹</button>
@@ -1148,6 +1190,7 @@ $('homeLogo').src = LOGO;
 function showHome(){
   $('view-home').style.display='flex';
   $('view-ficha').style.display='none';
+  try{ ajustarMenuSegmento(); }catch(e){}
 }
 function showFicha(){
   $('view-home').style.display='none';
@@ -1253,6 +1296,128 @@ function renderSrVideos(items){
   });
   return h;
 }
+/* ═══════════ SENIOR: menú, Mi Asistencia, Calendario, Citaciones ═══════════ */
+const upN = s=>String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+function jugadoresAsociados(){
+  const ruts=(rutAsociado||'').split('|').map(r=>normRut(r)).filter(Boolean);
+  if(!ruts.length) return (PLAYERS||[]);
+  return (PLAYERS||[]).filter(p=>ruts.includes(normRut(p.rut)));
+}
+function ajustarMenuSegmento(){
+  const sr = (typeof segmentoActual==='function' && segmentoActual()==='SENIORS');
+  const isAdmin = (typeof esAdmin==='function' && esAdmin());
+  const show=(id,on)=>{ const el=$(id); if(el) el.style.display = on ? '' : 'none'; };
+  ['btn-miasist','btn-calendario','btn-citaciones'].forEach(id=>show(id, sr||isAdmin));
+  ['btn-partidos','btn-planificaciones','btn-gira','btn-charla'].forEach(id=>show(id, !sr||isAdmin));
+}
+function abrirVistaSenior(id){
+  ['view-home','view-ficha','view-fotos','view-partidos','view-plan','view-miasist','view-calendario','view-citaciones'].forEach(v=>{ const el=$(v); if(el) el.style.display='none'; });
+  $(id).style.display='block'; window.scrollTo({top:0});
+}
+function volverHomeSenior(id){ const el=$(id); if(el) el.style.display='none'; $('view-home').style.display='flex'; window.scrollTo({top:0}); }
+function srLoader(){ return '<div class="loader show"><div class="spin"></div><span>Cargando…</span></div>'; }
+function srEmpty(msg){ return '<div class="partidos-empty"><p>'+esc(msg)+'</p></div>'; }
+async function apiFotos(action, extra){
+  const u=fbAuth.currentUser; if(!u) throw new Error('sin sesión');
+  const idToken=await u.getIdToken();
+  const res=await fetch(API_FOTOS+'?action='+action+(extra||'')+'&idToken='+encodeURIComponent(idToken));
+  return await res.json();
+}
+function srBadge(m){ m=(m||'').toUpperCase(); const c=m==='OK'?'#27c281':(m==='F'?'#ff4d5e':'#9a9aa3'); const t=m==='OK'?'Asistió':(m==='F'?'Faltó':m); return '<span style="display:inline-block;font-size:10px;font-weight:700;color:'+c+';border:1px solid '+c+';border-radius:5px;padding:1px 7px">'+t+'</span>'; }
+
+/* Mi Asistencia */
+async function showMiAsist(){
+  abrirVistaSenior('view-miasist'); $('miaLogo').src=LOGO;
+  const el=$('mia-result'); el.innerHTML=srLoader();
+  const jug=jugadoresAsociados(); const nombre=jug.length?jug[0].nombre:'';
+  if(!nombre){ el.innerHTML=srEmpty('No pudimos identificar tu nombre en la academia.'); return; }
+  try{ const d=await apiFotos('srmiasist','&nombre='+encodeURIComponent(nombre)); renderMiAsist(el,nombre,d.turnos||[]); }
+  catch(e){ el.innerHTML=srEmpty('No se pudo cargar tu asistencia.'); }
+}
+function renderMiAsist(el,nombre,turnos){
+  if(!turnos.length){ el.innerHTML=srEmpty('No encontramos tu asistencia en los turnos Senior. Puede que tu nombre esté escrito distinto en la planilla.'); return; }
+  let h='<div style="font-weight:700;font-size:17px;margin-bottom:14px">'+esc(nombre)+'</div>';
+  turnos.forEach(t=>{
+    const pct=t.total?Math.round(t.ok/t.total*100):0;
+    h+='<div class="cardsec" style="background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px">';
+    h+='<div style="font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;color:var(--pink);margin-bottom:10px">Turno '+esc(t.turno)+'</div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">'+
+       '<div style="text-align:center"><div style="font-family:Oswald;font-size:24px;font-weight:700;color:var(--ok)">'+t.ok+'</div><div style="font-size:10px;color:var(--muted)">ASISTIÓ</div></div>'+
+       '<div style="text-align:center"><div style="font-family:Oswald;font-size:24px;font-weight:700;color:var(--red)">'+t.f+'</div><div style="font-size:10px;color:var(--muted)">FALTÓ</div></div>'+
+       '<div style="text-align:center"><div style="font-family:Oswald;font-size:24px;font-weight:700">'+pct+'%</div><div style="font-size:10px;color:var(--muted)">ASISTENCIA</div></div>'+
+       '</div>';
+    if(t.dias&&t.dias.length){
+      h+='<div style="display:flex;flex-direction:column;gap:6px">';
+      t.dias.forEach(d=>{ h+='<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:6px"><span style="font-size:13px">'+esc(d.fecha)+'</span>'+srBadge(d.marca)+'</div>'; });
+      h+='</div>';
+    }
+    h+='</div>';
+  });
+  el.innerHTML=h;
+}
+
+/* Calendario de Entrenamientos */
+async function showCalendario(){
+  abrirVistaSenior('view-calendario'); $('calLogo').src=LOGO;
+  const el=$('cal-result'); el.innerHTML=srLoader();
+  try{ const d=await apiFotos('srcalendario',''); renderCalendario(el,d.fechas||[]); }
+  catch(e){ el.innerHTML=srEmpty('No se pudo cargar el calendario.'); }
+}
+function renderCalendario(el,fechas){
+  if(!fechas.length){ el.innerHTML=srEmpty('Aún no hay fechas cargadas.'); return; }
+  const prox=fechas.filter(f=>f.futuro), pas=fechas.filter(f=>!f.futuro).reverse();
+  const card=f=>'<div style="display:flex;justify-content:space-between;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px">'+
+    '<span style="font-weight:600">'+esc(f.fecha)+'</span>'+
+    '<span style="font-family:Oswald;font-weight:700;color:var(--pink)">SENIOR '+esc(f.turno)+'</span></div>';
+  let h='';
+  h+='<div style="font-family:Oswald;font-weight:700;text-transform:uppercase;color:var(--pink);margin:4px 0 10px">Próximos entrenamientos ('+prox.length+')</div>';
+  h+= prox.length? prox.map(card).join('') : srEmpty('No hay próximos entrenamientos programados.');
+  if(pas.length){
+    h+='<div style="font-family:Oswald;font-weight:700;text-transform:uppercase;color:var(--muted);margin:18px 0 10px">Anteriores</div>';
+    h+=pas.slice(0,40).map(card).join('');
+  }
+  el.innerHTML=h;
+}
+
+/* Citación Partidos Amistosos */
+async function showCitaciones(){
+  abrirVistaSenior('view-citaciones'); $('citLogo').src=LOGO;
+  const el=$('cit-result'); el.innerHTML=srLoader();
+  const mis=jugadoresAsociados().map(j=>upN(j.nombre)).filter(Boolean);
+  try{ const d=await apiFotos('srcitaciones',''); renderCitaciones(el,d.citaciones||[],mis); }
+  catch(e){ el.innerHTML=srEmpty('No se pudo cargar las citaciones.'); }
+}
+function estoyCitado(citNorm,mis){
+  return (citNorm||[]).some(cn=>mis.some(m=>m && cn && (cn===m || cn.indexOf(m)>=0 || m.indexOf(cn)>=0)));
+}
+function renderCitaciones(el,cits,mis){
+  if(!cits.length){ el.innerHTML=srEmpty('Aún no hay citaciones cargadas.'); return; }
+  const mias=cits.filter(c=>estoyCitado(c.citadosNorm,mis));
+  const card=(c,yo)=>'<div style="background:var(--panel);border:1.5px solid '+(yo?'var(--pink)':'var(--line)')+';border-radius:14px;padding:14px;margin-bottom:10px">'+
+    (yo?'<div style="display:inline-block;font-size:11px;font-weight:700;color:#fff;background:var(--pink);border-radius:6px;padding:2px 9px;margin-bottom:8px">✓ Estás citado</div>':'')+
+    '<div style="font-weight:700;font-size:16px">vs '+esc(c.rival||'Rival por confirmar')+'</div>'+
+    '<div style="font-size:13px;color:var(--muted);margin-top:4px">'+[c.fecha,c.hora&&('🕒 '+c.hora),c.turno&&('· '+c.turno)].filter(Boolean).map(esc).join(' ')+'</div>'+
+    (c.lugar?'<div style="font-size:13px;color:var(--muted);margin-top:2px">📍 '+esc(c.lugar)+'</div>':'')+
+    (c.citados&&c.citados.length?'<div style="font-size:12px;color:var(--muted2);margin-top:8px;border-top:1px solid var(--line);padding-top:8px"><b style="color:var(--muted)">Citados:</b> '+esc(c.citados.join(', '))+'</div>':'')+
+    '</div>';
+  let h='';
+  if(mis.length){
+    h+='<div style="font-family:Oswald;font-weight:700;text-transform:uppercase;color:var(--pink);margin:4px 0 10px">Tus citaciones ('+mias.length+')</div>';
+    h+= mias.length? mias.map(c=>card(c,true)).join('') : srEmpty('No estás citado a ningún partido por ahora.');
+    h+='<div style="font-family:Oswald;font-weight:700;text-transform:uppercase;color:var(--muted);margin:18px 0 10px">Todas las citaciones</div>';
+  }
+  h+=cits.map(c=>card(c,mis.length?estoyCitado(c.citadosNorm,mis):false)).join('');
+  el.innerHTML=h;
+}
+
+$('btn-miasist')&&($('btn-miasist').onclick=showMiAsist);
+$('btn-calendario')&&($('btn-calendario').onclick=showCalendario);
+$('btn-citaciones')&&($('btn-citaciones').onclick=showCitaciones);
+$('btn-mia-inicio')&&($('btn-mia-inicio').onclick=()=>volverHomeSenior('view-miasist'));
+$('btn-cal-inicio')&&($('btn-cal-inicio').onclick=()=>volverHomeSenior('view-calendario'));
+$('btn-cit-inicio')&&($('btn-cit-inicio').onclick=()=>volverHomeSenior('view-citaciones'));
+try{ ajustarMenuSegmento(); }catch(e){}
+
 function renderFotos(albums,prepend){
   const el=$('fotos-result');
   prepend=prepend||'';
