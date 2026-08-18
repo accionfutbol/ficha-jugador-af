@@ -1283,13 +1283,17 @@ async function cargarFotosApoderado(){
   const u=fbAuth.currentUser;
   if(!u){ el.innerHTML='<div class="partidos-empty"><p>Inicia sesión para ver los álbumes.</p></div>'; return; }
   const idToken=await u.getIdToken();
-  const seen={}, combos=[];
-  (PLAYERS||[]).forEach(p=>{ const k=(p.sede||'')+'|'+(p.cat||''); if((p.sede||p.cat)&&!seen[k]){ seen[k]=1; combos.push({sede:p.sede||'',cat:p.cat||''}); } });
-  let albums=[];
-  if(!combos.length){ const r=await fetchFotos(idToken,'',''); albums=r.fotos||[]; }
-  else { for(const c of combos){ const r=await fetchFotos(idToken,c.sede,c.cat); albums=albums.concat(r.fotos||[]); } }
-  const dd={}, uniq=[];
-  albums.forEach(a=>{ const k=(a.link||'')+'|'+(a.categoria||''); if(!dd[k]){ dd[k]=1; uniq.push(a); } });
+  const isSenior=(segmentoActual()==='SENIORS');
+  let uniq=[];
+  if(!isSenior){   // los Seniors NO ven álbumes de otras categorías (PRO/SUB), solo sus entrenamientos
+    const seen={}, combos=[];
+    (PLAYERS||[]).forEach(p=>{ const k=(p.sede||'')+'|'+(p.cat||''); if((p.sede||p.cat)&&!seen[k]){ seen[k]=1; combos.push({sede:p.sede||'',cat:p.cat||''}); } });
+    let albums=[];
+    if(!combos.length){ const r=await fetchFotos(idToken,'',''); albums=r.fotos||[]; }
+    else { for(const c of combos){ const r=await fetchFotos(idToken,c.sede,c.cat); albums=albums.concat(r.fotos||[]); } }
+    const dd={};
+    albums.forEach(a=>{ const k=(a.link||'')+'|'+(a.categoria||''); if(!dd[k]){ dd[k]=1; uniq.push(a); } });
+  }
   let videosHTML='';
   if(segmentoActual()==='SENIORS'){
     try{
