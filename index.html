@@ -1208,11 +1208,38 @@ async function cargarFotosApoderado(){
   else { for(const c of combos){ const r=await fetchFotos(idToken,c.sede,c.cat); albums=albums.concat(r.fotos||[]); } }
   const dd={}, uniq=[];
   albums.forEach(a=>{ const k=(a.link||'')+'|'+(a.categoria||''); if(!dd[k]){ dd[k]=1; uniq.push(a); } });
-  renderFotos(uniq);
+  let videosHTML='';
+  if(segmentoActual()==='SENIORS'){
+    try{
+      const rv=await fetch(API_FOTOS+'?action=srvideos&idToken='+encodeURIComponent(idToken));
+      const dv=await rv.json();
+      if(dv.videos && dv.videos.length) videosHTML=renderSrVideos(dv.videos);
+    }catch(e){}
+  }
+  renderFotos(uniq, videosHTML);
 }
-function renderFotos(albums){
+function renderSrVideos(videos){
+  const byTurno={};
+  videos.forEach(v=>{ const t=v.turno||'SENIOR'; (byTurno[t]=byTurno[t]||[]).push(v); });
+  let h='';
+  Object.keys(byTurno).forEach(t=>{
+    h+='<div class="foto-mesh">🎥 Videos de Entrenamiento · SENIOR '+esc(t)+'</div><div class="foto-grid">';
+    byTurno[t].forEach(v=>{
+      h+='<a class="foto-card" href="'+esc(v.url)+'" target="_blank" rel="noopener">'+
+         '<div class="foto-ic">🎥</div>'+
+         '<div class="foto-info"><div class="foto-conc">'+esc(v.concepto||'Entrenamiento')+'</div>'+
+         '<div class="foto-meta">'+esc([v.fecha,v.sede].filter(Boolean).join(' · '))+'</div></div>'+
+         '<div class="foto-go">Ver ▸</div></a>';
+    });
+    h+='</div>';
+  });
+  return h;
+}
+function renderFotos(albums,prepend){
   const el=$('fotos-result');
-  if(!albums.length){ el.innerHTML='<div class="partidos-empty"><div style="font-size:48px;margin-bottom:14px">📷</div><p>Aún no hay álbumes disponibles.</p></div>'; return; }
+  prepend=prepend||'';
+  if(!albums.length && !prepend){ el.innerHTML='<div class="partidos-empty"><div style="font-size:48px;margin-bottom:14px">📷</div><p>Aún no hay álbumes disponibles.</p></div>'; return; }
+  if(!albums.length){ el.innerHTML=prepend; return; }
   const grupos={};
   albums.forEach(a=>{ const g=(a.mes||'Otros'); (grupos[g]=grupos[g]||[]).push(a); });
   let h='';
@@ -1228,8 +1255,8 @@ function renderFotos(albums){
     });
     h+='</div>';
   });
-  el.innerHTML=h;
-  el.querySelectorAll('.foto-card').forEach(b=>{ b.onclick=()=>abrirAlbum(b.dataset.link, b.dataset.title); });
+  el.innerHTML=prepend+h;
+  el.querySelectorAll('.foto-card[data-link]').forEach(b=>{ b.onclick=()=>abrirAlbum(b.dataset.link, b.dataset.title); });
 }
 let ALBUM=[], LBI=0;
 function backAlbumsBtn(){ return '<button id="foto-volver" class="foto-back">← Volver a álbumes</button>'; }
