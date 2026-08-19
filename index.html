@@ -1362,10 +1362,9 @@ function jugadoresAsociados(){
 }
 function ajustarMenuSegmento(){
   const sr = (typeof segmentoActual==='function' && segmentoActual()==='SENIORS');
-  const isAdmin = (typeof esAdmin==='function' && esAdmin());
   const show=(id,on)=>{ const el=$(id); if(el) el.style.display = on ? '' : 'none'; };
-  ['btn-calendario','btn-ig-senior'].forEach(id=>show(id, sr||isAdmin));
-  ['btn-partidos','btn-planificaciones','btn-gira','btn-charla'].forEach(id=>show(id, !sr||isAdmin));
+  ['btn-calendario','btn-ig-senior'].forEach(id=>show(id, sr));   // solo en segmento SENIORS
+  ['btn-partidos','btn-planificaciones','btn-gira','btn-charla'].forEach(id=>show(id, !sr)); // solo fuera de SENIORS
 }
 function abrirVistaSenior(id){
   ['view-home','view-ficha','view-fotos','view-partidos','view-plan','view-miasist','view-calendario'].forEach(v=>{ const el=$(v); if(el) el.style.display='none'; });
