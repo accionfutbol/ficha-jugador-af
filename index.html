@@ -693,6 +693,20 @@ footer strong{color:var(--muted)}
 .cal-turnos{display:flex;gap:10px;margin-bottom:18px}
 .cal-t{flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--line);background:rgba(18,18,22,.72);color:var(--muted);font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;letter-spacing:.05em;cursor:pointer;text-transform:uppercase}
 .cal-t.on{background:var(--pink);border-color:var(--pink);color:#fff}
+/* Tabla Calendario Seniors */
+.cs-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px;border:1px solid var(--line)}
+.cs-table{min-width:580px}
+.cs-row{display:grid;grid-template-columns:104px 1fr 76px 76px 130px;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px}
+.cs-row:last-child{border-bottom:none}
+.cs-table .cs-row:nth-child(even){background:rgba(255,255,255,.02)}
+.cs-head{background:var(--panel2);font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.04em;color:var(--muted)}
+.cs-fecha{font-weight:700}
+.cs-ej{color:var(--ink);font-weight:500}
+.cs-link{color:var(--pink);text-decoration:none;font-weight:700;white-space:nowrap}
+.cs-none{color:var(--muted2)}
+.cs-pill{display:inline-block;font-size:11px;font-weight:800;border-radius:7px;padding:4px 10px;white-space:nowrap}
+.cs-pill.ok{background:rgba(39,194,129,.16);color:var(--ok);border:1px solid var(--ok)}
+.cs-pill.no{background:rgba(255,77,94,.16);color:var(--red);border:1px solid var(--red)}
 .foto-mesh{font-family:'Oswald',sans-serif;font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--pink);margin:20px 0 9px}
 .foto-card{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:inherit;transition:.15s}
 .foto-card:hover{border-color:var(--pink)}
@@ -777,13 +791,9 @@ footer strong{color:var(--muted)}
         <span class="home-btn-icon">📅</span>
         <span>Planificaciones</span>
       </button>
-      <button class="home-btn home-btn-ghost" id="btn-miasist" style="display:none">
-        <span class="home-btn-icon">✅</span>
-        <span>Mi Asistencia AM/PM</span>
-      </button>
       <button class="home-btn home-btn-ghost" id="btn-calendario" style="display:none">
         <span class="home-btn-icon">🗓️</span>
-        <span>Calendario de Entrenamientos</span>
+        <span>Calendario Seniors</span>
       </button>
       <a class="home-btn home-btn-ghost" id="btn-ig-senior" href="https://www.instagram.com/accionfutbolsenior?igsh=MThkMTVnaDRrdm51cA==" target="_blank" rel="noopener" style="display:none;text-decoration:none">
         <span class="home-btn-icon">📸</span>
@@ -1017,7 +1027,7 @@ footer strong{color:var(--muted)}
   <div class="hero-wrap"><nav>
     <div class="logo-wrap"><img class="logo-img" id="calLogo" alt="Acción Fútbol"><div class="brand"><b>Acción Fútbol</b><span>Calendario</span></div></div>
     <a class="back-link" id="btn-cal-inicio" style="margin-left:auto">← Inicio</a>
-  </nav><div class="hero-content"><div class="eyebrow">Senior</div><h1>Calendario de <em>Entrenamientos</em></h1><p class="subtitle">Fechas de entrenamiento AM y PM.</p></div></div>
+  </nav><div class="hero-content"><div class="eyebrow">Senior</div><h1>Calendario <em>Seniors</em></h1><p class="subtitle">Fecha, ejercicio, fotos, videos y tu asistencia.</p></div></div>
   <main><div id="cal-result"><div class="loader show"><div class="spin"></div><span>Cargando…</span></div></div></main>
   <footer><strong>Acción Fútbol</strong> · Temporada 2026</footer>
 </div>
@@ -1335,7 +1345,7 @@ function ajustarMenuSegmento(){
   const sr = (typeof segmentoActual==='function' && segmentoActual()==='SENIORS');
   const isAdmin = (typeof esAdmin==='function' && esAdmin());
   const show=(id,on)=>{ const el=$(id); if(el) el.style.display = on ? '' : 'none'; };
-  ['btn-miasist','btn-calendario','btn-ig-senior'].forEach(id=>show(id, sr||isAdmin));
+  ['btn-calendario','btn-ig-senior'].forEach(id=>show(id, sr||isAdmin));
   ['btn-partidos','btn-planificaciones','btn-gira','btn-charla'].forEach(id=>show(id, !sr||isAdmin));
 }
 function abrirVistaSenior(id){
@@ -1384,93 +1394,57 @@ function renderMiAsist(el,nombre,turnos){
   el.innerHTML=h;
 }
 
-/* Calendario de Entrenamientos */
-let CAL_FECHAS=[], CAL_TURNO='AM', CAL_ASIST={AM:{},PM:{}}, CAL_TURNOS=[];
+/* Calendario Seniors (fecha · ejercicio · foto · video · asistencia) */
+let CAL_TURNO='AM', CAL_TURNOS=[], CAL_DIAS=[], CAL_NOMBRE='';
 async function showCalendario(){
   abrirVistaSenior('view-calendario'); $('calLogo').src=LOGO;
   const el=$('cal-result'); el.innerHTML=srLoader();
-  const jug=jugadoresAsociados(); const nombre=jug.length?jug[0].nombre:'';
+  const jug=jugadoresAsociados(); CAL_NOMBRE=jug.length?jug[0].nombre:'';
   try{
-    const d=await apiFotos('srcalendario',''); CAL_FECHAS=d.fechas||[];
-    CAL_ASIST={AM:{},PM:{}}; CAL_TURNOS=[];
-    if(nombre){
-      const a=await apiFotos('srmiasist','&nombre='+encodeURIComponent(nombre));
-      (a.turnos||[]).forEach(t=>{ const map={}; (t.dias||[]).forEach(dd=>{ map[dd.fecha]=(dd.marca||'').toUpperCase(); }); CAL_ASIST[t.turno]=map; CAL_TURNOS.push(t.turno); });
-    }
-    if(CAL_TURNOS.length) CAL_TURNO=CAL_TURNOS[0];   // muestra el turno del jugador
-    renderCalendario();
+    CAL_TURNOS=[];
+    if(CAL_NOMBRE){ const a=await apiFotos('srmiasist','&nombre='+encodeURIComponent(CAL_NOMBRE)); CAL_TURNOS=(a.turnos||[]).map(t=>String(t.turno).toUpperCase()); }
+    if(CAL_TURNOS.length) CAL_TURNO=CAL_TURNOS[0];
+    await cargarCalSeniors();
   }catch(e){ el.innerHTML=srEmpty('No se pudo cargar el calendario.'); }
 }
-function renderCalendario(){
+async function cargarCalSeniors(){
+  const el=$('cal-result'); el.innerHTML=srLoader();
+  try{
+    const d=await apiFotos('srcalseniors','&turno='+CAL_TURNO+'&nombre='+encodeURIComponent(CAL_NOMBRE||''));
+    CAL_DIAS=d.dias||[];
+    renderCalSeniors();
+  }catch(e){ el.innerHTML=srEmpty('No se pudo cargar el calendario.'); }
+}
+function bindCalT(el){ el.querySelectorAll('.cal-t[data-t]').forEach(b=>b.onclick=()=>{ CAL_TURNO=b.dataset.t; cargarCalSeniors(); }); }
+function renderCalSeniors(){
   const el=$('cal-result');
-  const NM=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const hoy=new Date();
-  // Mes presente + mes siguiente
-  const months=[{y:hoy.getFullYear(), m:hoy.getMonth()+1}];
-  let ny=months[0].y, nm=months[0].m+1; if(nm>12){ nm=1; ny++; }
-  months.push({y:ny, m:nm});
-  // Días de entrenamiento del turno elegido
-  const dmap={};
-  CAL_FECHAS.filter(f=>String(f.turno).toUpperCase()===CAL_TURNO).forEach(f=>{
-    const p=String(f.fecha).split('-'); const d=+p[0], m=+p[1], y=+p[2]; if(!d) return;
-    (dmap[y+'-'+m]=dmap[y+'-'+m]||{})[d]=true;
-  });
-  const asis=CAL_ASIST[CAL_TURNO]||{};
-  const f2=(d,m,y)=>('0'+d).slice(-2)+'-'+('0'+m).slice(-2)+'-'+y;
-  const hoy0=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()).getTime();
-  const mostrarToggle = (CAL_TURNOS.length!==1); // 1 turno => fijo; 0 (admin) o 2 => selector
+  const mostrarToggle=(CAL_TURNOS.length!==1);
   let h='';
   if(mostrarToggle){
-    h+='<div class="cal-turnos">'+
-        '<button class="cal-t'+(CAL_TURNO==='AM'?' on':'')+'" data-t="AM">Senior AM</button>'+
-        '<button class="cal-t'+(CAL_TURNO==='PM'?' on':'')+'" data-t="PM">Senior PM</button></div>';
+    h+='<div class="cal-turnos"><button class="cal-t'+(CAL_TURNO==='AM'?' on':'')+'" data-t="AM">Senior AM</button><button class="cal-t'+(CAL_TURNO==='PM'?' on':'')+'" data-t="PM">Senior PM</button></div>';
   } else {
     h+='<div class="cal-turnos"><div class="cal-t on" style="cursor:default">Senior '+CAL_TURNO+'</div></div>';
   }
-
-  // Resumen del mes presente
-  const pm=months[0], diasPres=dmap[pm.y+'-'+pm.m]||{};
-  let asistidos=0, restantes=0;
-  Object.keys(diasPres).forEach(dStr=>{
-    const d=+dStr; const key=f2(d,pm.m,pm.y);
-    const dt=new Date(pm.y,pm.m-1,d).getTime();
-    if(asis[key]==='OK') asistidos++;
-    else if(dt>=hoy0) restantes++;
-  });
+  const asistidos=CAL_DIAS.filter(d=>d.marca==='OK').length;
+  const faltas=CAL_DIAS.filter(d=>d.marca!=='OK').length;
   h+='<div class="cal-sum">'+
-     '<div class="box"><div class="v" style="color:var(--ok)">'+asistidos+'</div><div class="l">Asistidos ('+NM[pm.m]+')</div></div>'+
-     '<div class="box"><div class="v" style="color:var(--pink)">'+restantes+'</div><div class="l">Por asistir ('+NM[pm.m]+')</div></div>'+
-     '</div>';
-
-  let hayAlguno=false;
-  months.forEach(mm=>{
-    const y=mm.y, m=mm.m, dias=dmap[y+'-'+m]||{};
-    if(Object.keys(dias).length) hayAlguno=true;
-    const firstDow=(new Date(y,m-1,1).getDay()+6)%7;
-    const ndays=new Date(y,m,0).getDate();
-    h+='<div class="cal-card"><div class="cal-title">'+NM[m].toUpperCase()+' <span>'+y+'</span></div><div class="cal-grid">';
-    ['L','M','X','J','V','S','D'].forEach(dd=>h+='<div class="cal-dow">'+dd+'</div>');
-    for(let i=0;i<firstDow;i++) h+='<div class="cal-cell empty"></div>';
-    for(let d=1;d<=ndays;d++){
-      const tr=dias[d];
-      const isHoy=(hoy.getFullYear()===y&&hoy.getMonth()+1===m&&hoy.getDate()===d);
-      const asistio=tr && asis[f2(d,m,y)]==='OK';
-      let cls='cal-cell'+(tr?' train':'')+(asistio?' asistido':'')+(isHoy?' hoy':'');
-      let extra='';
-      if(asistio) extra='<span class="cal-check">✓ ASISTIÓ</span>';
-      else if(tr) extra='<span class="cal-chip ok">'+CAL_TURNO+'</span>';
-      h+='<div class="'+cls+'"><span class="cal-num">'+d+'</span>'+extra+'</div>';
-    }
-    h+='</div></div>';
+     '<div class="box"><div class="v" style="color:var(--ok)">'+asistidos+'</div><div class="l">Asistió</div></div>'+
+     '<div class="box"><div class="v" style="color:var(--red)">'+faltas+'</div><div class="l">No asistió</div></div>'+
+     '<div class="box"><div class="v">'+CAL_DIAS.length+'</div><div class="l">Entrenamientos</div></div></div>';
+  if(!CAL_DIAS.length){ el.innerHTML=h+srEmpty('No hay entrenamientos cargados para este turno.'); bindCalT(el); return; }
+  h+='<div class="cs-wrap"><div class="cs-table">';
+  h+='<div class="cs-row cs-head"><div>Fecha</div><div>Ejercicio</div><div>Foto</div><div>Video</div><div>Asistencia</div></div>';
+  CAL_DIAS.forEach(d=>{
+    const foto=d.foto?'<a class="cs-link" href="'+esc(d.foto)+'" target="_blank" rel="noopener">📷 Ver</a>':'<span class="cs-none">—</span>';
+    const video=d.video?'<a class="cs-link" href="'+esc(d.video)+'" target="_blank" rel="noopener">🎥 Ver</a>':'<span class="cs-none">—</span>';
+    const asis=d.marca==='OK'?'<span class="cs-pill ok">✓ Asistió</span>':'<span class="cs-pill no">✗ No asistió</span>';
+    h+='<div class="cs-row"><div class="cs-fecha">'+esc(d.fecha)+'</div><div class="cs-ej">'+esc(d.concepto||'—')+'</div><div>'+foto+'</div><div>'+video+'</div><div>'+asis+'</div></div>';
   });
-  if(!hayAlguno) h+='<div style="text-align:center;color:var(--muted);font-size:13px;margin-top:6px">No hay entrenamientos '+CAL_TURNO+' cargados para estos meses.</div>';
+  h+='</div></div>';
   el.innerHTML=h;
-  el.querySelectorAll('.cal-t[data-t]').forEach(b=>b.onclick=()=>{ CAL_TURNO=b.dataset.t; renderCalendario(); });
+  bindCalT(el);
 }
-
-$('btn-miasist')&&($('btn-miasist').onclick=showMiAsist);
 $('btn-calendario')&&($('btn-calendario').onclick=showCalendario);
-$('btn-mia-inicio')&&($('btn-mia-inicio').onclick=()=>volverHomeSenior('view-miasist'));
 $('btn-cal-inicio')&&($('btn-cal-inicio').onclick=()=>volverHomeSenior('view-calendario'));
 try{ ajustarMenuSegmento(); }catch(e){}
 
