@@ -700,6 +700,9 @@ footer strong{color:var(--muted)}
 .bar-head .val sub{font-size:10px;color:var(--muted);font-family:'Inter';vertical-align:baseline;margin-left:1px}
 .bar{height:9px;border-radius:6px;background:var(--panel2);overflow:hidden}
 .bar>span{display:block;height:100%;border-radius:6px}
+.eval-obs{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+.eval-obs-title{font-size:12px;font-weight:600;color:var(--pink);margin-bottom:6px}
+.eval-obs-text{font-size:13px;color:var(--muted);line-height:1.5;font-style:italic;margin:0}
 .fstatgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fstat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
 .fstat .l{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted2);margin-bottom:5px}
@@ -1939,18 +1942,18 @@ function fichaHTML(p){
   '</div>'+
   '<div class="fcard" id="eval-1-card"><div class="fsect"><i></i>Evaluación del entrenador · 1er Semestre 2026</div>'+
     '<div id="eval-1-content" style="display:none">'+
-      '<div class="bar-row"><div class="bar-head"><span class="lab">Técnica Táctica <span id="eval-1-tecnica-badge"></span></span><span class="val"><span id="eval-1-tecnica"></span><sub>/10</sub></span></div></div>'+
-      '<div class="bar-row"><div class="bar-head"><span class="lab">Actitud <span id="eval-1-actitud-badge"></span></span><span class="val"><span id="eval-1-actitud"></span><sub>/10</sub></span></div></div>'+
-      '<div class="bar-row"><div class="bar-head"><span class="lab">Promedio Final</span><span class="val"><span id="eval-1-promedio"></span><sub>/10</sub></span></div></div>'+
+      '<div class="bar-row"><div class="bar-head"><span class="lab">Técnica Táctica <span id="eval-1-tecnica-badge"></span></span><span class="val"><span id="eval-1-tecnica"></span><sub>/7</sub></span></div></div>'+
+      '<div class="bar-row"><div class="bar-head"><span class="lab">Actitud <span id="eval-1-actitud-badge"></span></span><span class="val"><span id="eval-1-actitud"></span><sub>/7</sub></span></div></div>'+
+      '<div class="bar-row"><div class="bar-head"><span class="lab">Promedio Final</span><span class="val"><span id="eval-1-promedio"></span><sub>/7</sub></span></div></div>'+
       '<div class="eval-obs" id="eval-1-obs-wrap" style="display:none"><div class="eval-obs-title">📌 Observación del Entrenador</div><p id="eval-1-observacion" class="eval-obs-text"></p></div>'+
     '</div>'+
     '<div id="eval-1-empty" class="sec-todo">Cargando evaluaciones…</div>'+
   '</div>'+
   '<div class="fcard" id="eval-2-card" style="display:none"><div class="fsect"><i></i>Evaluación del entrenador · 2do Semestre 2026</div>'+
     '<div id="eval-2-content">'+
-      '<div class="bar-row"><div class="bar-head"><span class="lab">Técnica Táctica <span id="eval-2-tecnica-badge"></span></span><span class="val"><span id="eval-2-tecnica"></span><sub>/10</sub></span></div></div>'+
-      '<div class="bar-row"><div class="bar-head"><span class="lab">Actitud <span id="eval-2-actitud-badge"></span></span><span class="val"><span id="eval-2-actitud"></span><sub>/10</sub></span></div></div>'+
-      '<div class="bar-row"><div class="bar-head"><span class="lab">Promedio Final</span><span class="val"><span id="eval-2-promedio"></span><sub>/10</sub></span></div></div>'+
+      '<div class="bar-row"><div class="bar-head"><span class="lab">Técnica Táctica <span id="eval-2-tecnica-badge"></span></span><span class="val"><span id="eval-2-tecnica"></span><sub>/7</sub></span></div></div>'+
+      '<div class="bar-row"><div class="bar-head"><span class="lab">Actitud <span id="eval-2-actitud-badge"></span></span><span class="val"><span id="eval-2-actitud"></span><sub>/7</sub></span></div></div>'+
+      '<div class="bar-row"><div class="bar-head"><span class="lab">Promedio Final</span><span class="val"><span id="eval-2-promedio"></span><sub>/7</sub></span></div></div>'+
       '<div class="eval-obs" id="eval-2-obs-wrap" style="display:none"><div class="eval-obs-title">📌 Observación del Entrenador</div><p id="eval-2-observacion" class="eval-obs-text"></p></div>'+
     '</div>'+
   '</div>'+
@@ -2884,8 +2887,8 @@ async function cargarEvaluacionesEntrenador(rut) {
 function evalBadge(nota){
   if(!nota&&nota!==0) return '';
   var n=parseFloat(nota);
-  if(n>=8) return estBadge('DESTACADO');
-  if(n>=6) return estBadge('ACEPTABLE');
+  if(n>=6) return estBadge('DESTACADO');
+  if(n>=5) return estBadge('ACEPTABLE');
   return estBadge('EN DESARROLLO');
 }
 
