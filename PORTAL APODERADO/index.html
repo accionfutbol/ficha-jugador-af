@@ -23,6 +23,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="skeleton-loader-utils.js"></script>
 <style>
 :root{
   --bg:#0c0c0e; --panel:#161619; --panel2:#1f1f24; --line:#2a2a30;
@@ -1031,9 +1032,8 @@ footer strong{color:var(--muted)}
       </div>
       <p class="search-hint">Modo admin · busca los partidos de cualquier jugador por RUT o nombre.</p>
     </div>
-    <div id="partidos-result">
-      <div class="loader show"><div class="spin"></div><span>Cargando partidos…</span></div>
-    </div>
+    <div id="partidos-result"></div>
+    <script>if(SkeletonLoader) SkeletonLoader.showGrid('partidos-result', 4);</script>
   </main>
   <footer>
     <strong>Acción Fútbol</strong> · Detalles de Partidos · Temporada 2026
@@ -1065,9 +1065,8 @@ footer strong{color:var(--muted)}
         <button id="fotos-ver" class="btn-search">Ver álbumes</button>
       </div>
     </div>
-    <div id="fotos-result">
-      <div class="loader show"><div class="spin"></div><span>Cargando álbumes…</span></div>
-    </div>
+    <div id="fotos-result"></div>
+    <script>if(SkeletonLoader) SkeletonLoader.showGrid('fotos-result', 4);</script>
   </main>
   <footer><strong>Acción Fútbol</strong> · Fotos y Videos · Temporada 2026</footer>
 </div>
@@ -1078,7 +1077,8 @@ footer strong{color:var(--muted)}
     <div class="logo-wrap"><img class="logo-img" id="miaLogo" alt="Acción Fútbol"><div class="brand"><b>Acción Fútbol</b><span>Mi Asistencia</span></div></div>
     <a class="back-link" id="btn-mia-inicio" style="margin-left:auto">← Inicio</a>
   </nav><div class="hero-content"><div class="eyebrow">Senior</div><h1>Mi <em>Asistencia</em></h1><p class="subtitle">Tu registro de entrenamientos AM y PM.</p></div></div>
-  <main><div id="mia-result"><div class="loader show"><div class="spin"></div><span>Cargando…</span></div></div></main>
+  <main><div id="mia-result"></div></main>
+  <script>if(SkeletonLoader) SkeletonLoader.showGrid('mia-result', 4);</script>
   <footer><strong>Acción Fútbol</strong> · Temporada 2026</footer>
 </div>
 
@@ -1088,7 +1088,8 @@ footer strong{color:var(--muted)}
     <div class="logo-wrap"><img class="logo-img" id="calLogo" alt="Acción Fútbol"><div class="brand"><b>Acción Fútbol</b><span>Calendario</span></div></div>
     <a class="back-link" id="btn-cal-inicio" style="margin-left:auto">← Inicio</a>
   </nav><div class="hero-content"><div class="eyebrow">Senior</div><h1>Calendario <em>Seniors</em></h1><p class="subtitle">Fecha, ejercicio, fotos, videos y tu asistencia.</p></div></div>
-  <main><div id="cal-result"><div class="loader show"><div class="spin"></div><span>Cargando…</span></div></div></main>
+  <main><div id="cal-result"></div></main>
+  <script>if(SkeletonLoader) SkeletonLoader.showGrid('cal-result', 4);</script>
   <footer><strong>Acción Fútbol</strong> · Temporada 2026</footer>
 </div>
 
