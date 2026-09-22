@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Acción Fútbol · Asistencia Senior</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0c0e;--panel:#161619;--panel2:#1f1f24;--line:#2a2a30;--pink:#ff2e93;--ink:#f5f5f7;--muted:#9a9aa3;--muted2:#5c5c66;--ok:#27c281;--warn:#ffb020;--blue:#64c8ff;--red:#ff4d5e;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+.wrap{max-width:640px;margin:0 auto;padding:52px 16px 110px}
+h1{font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:26px;letter-spacing:.02em;margin-bottom:4px}
+h1 em{color:var(--pink);font-style:normal}
+.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;font-weight:600}
+input,select{width:100%;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;color:var(--ink);font-size:15px;font-family:'Inter';padding:13px 14px;outline:none}
+select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239a9aa3' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px}
+input:focus,select:focus{border-color:var(--pink)}
+.field{margin-bottom:14px}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;background:var(--pink);color:#fff;font-family:'Oswald';font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
+.hidden{display:none}
+.logout{position:fixed;top:14px;right:14px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:11px;color:var(--muted);cursor:pointer;z-index:50}
+.backhome{position:fixed;top:14px;left:14px;background:var(--pink);border:none;border-radius:8px;padding:7px 13px;font-size:11px;font-family:'Oswald';font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#fff;cursor:pointer;z-index:50;text-decoration:none}
+.err{background:rgba(255,77,94,.1);border:1px solid rgba(255,77,94,.3);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--red);margin-top:10px;display:none}
+.loader{text-align:center;color:var(--muted);padding:30px;font-size:14px}
+.turnos{display:flex;gap:10px;margin-bottom:14px}
+.turnos .t{flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--muted);font-family:'Oswald';font-weight:700;font-size:15px;letter-spacing:.05em;cursor:pointer}
+.turnos .t.on{background:var(--pink);border-color:var(--pink);color:#fff}
+.count{font-size:12px;color:var(--muted);margin:2px 0 12px}
+.pl{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:8px}
+.pl .info{flex:1;min-width:0}
+.pl .pn{font-weight:600;font-size:15px;line-height:1.25}
+.pl .pe{font-size:11px;color:var(--muted2);margin-top:1px}
+.marks{display:flex;gap:6px;flex-shrink:0}
+.mk{min-width:58px;height:44px;border-radius:9px;border:1.5px solid var(--line);background:var(--panel2);color:var(--muted);font-family:'Oswald';font-weight:700;font-size:14px;cursor:pointer;transition:.12s;padding:0 10px}
+.mk.ok.on{background:var(--ok);border-color:var(--ok);color:#04231a}
+.mk.f.on{background:var(--red);border-color:var(--red);color:#2a0509}
+.savebar{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--bg) 30%);padding:16px;z-index:40}
+.savebar .inner{max-width:640px;margin:0 auto}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 20px;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<a class="backhome" href="/">&#8592; Inicio</a>
+
+<!-- LOGIN -->
+<div id="login" class="wrap">
+  <h1>Asistencia <em>Senior</em></h1>
+  <p class="sub">Acción Fútbol · Portal del Entrenador</p>
+  <div class="card">
+    <div class="field"><label>Correo</label><input type="email" id="email" autocomplete="username"></div>
+    <div class="field"><label>Contraseña</label><input type="password" id="pass" autocomplete="current-password"></div>
+    <button class="btn" id="btn-login">Ingresar</button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="wrap hidden">
+  <div class="logout" id="btn-logout">Salir</div>
+  <h1>Asistencia <em>Senior</em></h1>
+  <p class="sub">Elige turno y fecha, luego marca quién asistió.</p>
+  <div class="card">
+    <label>Turno</label>
+    <div class="turnos">
+      <div class="t on" id="t-am" data-t="AM">AM</div>
+      <div class="t" id="t-pm" data-t="PM">PM</div>
+    </div>
+    <div class="field"><label>Fecha del entrenamiento</label><select id="fecha"><option value="">Cargando...</option></select></div>
+    <button class="btn" id="btn-cargar">Cargar lista</button>
+    <div class="err" id="app-err"></div>
+  </div>
+  <div id="lista-wrap" class="hidden">
+    <div class="count" id="count"></div>
+    <div id="lista"></div>
+  </div>
+</div>
+
+<div class="savebar hidden" id="savebar"><div class="inner"><button class="btn" id="btn-guardar">Guardar asistencia</button></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API_ASIS = 'https://script.google.com/macros/s/AKfycbwa53UNt6Q1MmxCt9g8EGB63Hu_r-UqzUQ1Uh51YWfe5ZuZCFTSVenPFLUGOVnghbIt/exec';
+const firebaseConfig = {
+  apiKey: "AIzaSyDZZsCyfgVTBOswlFPrbdf_pr7uzmQgnTs",
+  authDomain: "asistencia-accion-futbol.firebaseapp.com",
+  projectId: "asistencia-accion-futbol",
+  storageBucket: "asistencia-accion-futbol.firebasestorage.app",
+  messagingSenderId: "1007230869241",
+  appId: "1:1007230869241:web:d11ce0c37a820325cecc28"
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+
+const $ = id => document.getElementById(id);
+let TURNO='AM', ROSTER=[], FECHAS=[];
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+function showErr(id,m){ const e=$(id); e.textContent=m; e.style.display='block'; }
+function hideErr(id){ $(id).style.display='none'; }
+async function token(){ const u=fbAuth.currentUser; if(!u) throw new Error('Sesión no iniciada'); return await u.getIdToken(); }
+
+$('btn-login').onclick = async ()=>{
+  hideErr('login-err');
+  const email=$('email').value.trim(), pass=$('pass').value;
+  if(!email||!pass){ showErr('login-err','Ingresa correo y contraseña.'); return; }
+  $('btn-login').disabled=true;
+  try{ await fbAuth.signInWithEmailAndPassword(email,pass); }
+  catch(e){ showErr('login-err',(e.code==='auth/invalid-credential'||e.code==='auth/wrong-password')?'Contraseña incorrecta.':(e.message||'Error')); }
+  $('btn-login').disabled=false;
+};
+$('btn-logout').onclick=()=>fbAuth.signOut();
+fbAuth.onAuthStateChanged(async user=>{
+  if(user){ $('login').classList.add('hidden'); $('app').classList.remove('hidden'); await cargarFechas(); }
+  else { $('app').classList.add('hidden'); $('login').classList.remove('hidden'); $('savebar').classList.add('hidden'); }
+});
+
+/* Turno */
+document.querySelectorAll('.turnos .t').forEach(el=>el.onclick=async ()=>{
+  document.querySelectorAll('.turnos .t').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on'); TURNO=el.dataset.t;
+  $('lista-wrap').classList.add('hidden'); $('savebar').classList.add('hidden');
+  await cargarFechas();
+});
+
+async function cargarFechas(){
+  hideErr('app-err'); $('fecha').innerHTML='<option value="">Cargando...</option>';
+  try{
+    const t=await token();
+    const res=await fetch(API_ASIS+'?action=srfechas&turno='+TURNO+'&idToken='+encodeURIComponent(t));
+    const data=await res.json();
+    if(data.error){ $('fecha').innerHTML='<option value="">—</option>'; showErr('app-err',data.error); return; }
+    FECHAS=data.fechas||[];
+    if(!FECHAS.length){ $('fecha').innerHTML='<option value="">Sin fechas</option>'; return; }
+    const byMes={};
+    FECHAS.forEach(f=>{ (byMes[f.mes]=byMes[f.mes]||[]).push(f); });
+    let html='<option value="">Selecciona...</option>';
+    Object.keys(byMes).forEach(mes=>{
+      html+='<optgroup label="'+esc(mes||'—')+'">';
+      byMes[mes].forEach(f=>{ html+='<option value="'+f.col+'">'+esc(f.label)+'</option>'; });
+      html+='</optgroup>';
+    });
+    $('fecha').innerHTML=html;
+    // Selecciona por defecto la última fecha
+    $('fecha').value=String(FECHAS[FECHAS.length-1].col);
+  }catch(e){ $('fecha').innerHTML='<option value="">Error</option>'; showErr('app-err','No se pudo cargar las fechas.'); }
+}
+
+$('btn-cargar').onclick=async ()=>{
+  hideErr('app-err');
+  const col=$('fecha').value;
+  if(!col){ showErr('app-err','Elige una fecha.'); return; }
+  $('lista-wrap').classList.remove('hidden'); $('lista').innerHTML='<div class="loader">Cargando...</div>'; $('count').textContent='';
+  try{
+    const t=await token();
+    const res=await fetch(API_ASIS+'?action=srroster&turno='+TURNO+'&col='+encodeURIComponent(col)+'&idToken='+encodeURIComponent(t));
+    const data=await res.json();
+    if(data.error){ $('lista').innerHTML='<div class="loader">'+esc(data.error)+'</div>'; return; }
+    ROSTER=data.jugadores||[];
+    render();
+    $('savebar').classList.remove('hidden');
+  }catch(e){ $('lista').innerHTML='<div class="loader">No se pudo cargar.</div>'; }
+};
+
+function render(){
+  const lbl=(FECHAS.find(f=>String(f.col)===$('fecha').value)||{}).label||'';
+  updCount(lbl);
+  if(!ROSTER.length){ $('lista').innerHTML='<div class="loader">Sin jugadores.</div>'; return; }
+  $('lista').innerHTML=ROSTER.map((p,i)=>'<div class="pl">'+
+    '<div class="info"><div class="pn">'+esc(p.nombre)+'</div>'+(p.estado?'<div class="pe">'+esc(p.estado)+'</div>':'')+'</div>'+
+    '<div class="marks">'+
+      '<button class="mk ok'+(p.marca==='OK'?' on':'')+'" data-i="'+i+'" data-m="OK">✓</button>'+
+      '<button class="mk f'+(p.marca==='F'?' on':'')+'" data-i="'+i+'" data-m="F">F</button>'+
+    '</div>'+
+  '</div>').join('');
+  document.querySelectorAll('.mk').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i, m=b.dataset.m;
+    ROSTER[i].marca=(ROSTER[i].marca===m)?'':m;   // volver a tocar el mismo botón lo desmarca
+    render();
+  });
+}
+function updCount(lbl){
+  const ok=ROSTER.filter(p=>p.marca==='OK').length, f=ROSTER.filter(p=>p.marca==='F').length;
+  $('count').textContent=(lbl?(lbl+' · '):'')+ok+' asistieron · '+f+' faltaron · '+ROSTER.length+' en total';
+}
+
+$('btn-guardar').onclick=async ()=>{
+  const col=$('fecha').value;
+  if(!col){ toast('Elige una fecha'); return; }
+  const marcas=ROSTER.map(p=>({row:p.row,marca:p.marca}));
+  $('btn-guardar').disabled=true; $('btn-guardar').textContent='Guardando...';
+  try{
+    const t=await token();
+    const res=await fetch(API_ASIS,{method:'POST',body:JSON.stringify({action:'srsave',turno:TURNO,col:col,marcas:marcas,idToken:t})});
+    const data=await res.json();
+    if(data.error) toast('Error: '+data.error); else toast('Asistencia guardada');
+  }catch(e){ toast('No se pudo guardar.'); }
+  $('btn-guardar').disabled=false; $('btn-guardar').textContent='Guardar asistencia';
+};
+</script>
+</body>
+</html>

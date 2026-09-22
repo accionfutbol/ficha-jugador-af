@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git remote *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(git checkout *)",
+      "Bash(git commit *)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\camil\\\\Desktop\\\\ACCION_FUTBOL_ENTRENADOR\")",
+      "Bash(cp \"C:\\\\Users\\\\camil\\\\Desktop\\\\ACCION_FUTBOL_PROYECTO\\\\index.html\" \"C:\\\\Users\\\\camil\\\\Desktop\\\\ACCION_FUTBOL_ENTRENADOR\\\\\" && cp \"C:\\\\Users\\\\camil\\\\Desktop\\\\ACCION_FUTBOL_PROYECTO\\\\SKELETON_LOADERS_GUIDE.md\" \"C:\\\\Users\\\\camil\\\\Desktop\\\\ACCION_FUTBOL_ENTRENADOR\\\\\")",
+      "Bash(cp \"C:\\\\Users\\\\camil\\\\Desktop\\\\ACCION_FUTBOL_PROYECTO\\\\CLAUDE.md\" \"C:\\\\Users\\\\camil\\\\Desktop\\\\ACCION_FUTBOL_ENTRENADOR\\\\\")",
+      "PowerShell(Copy-Item -Path \"C:\\\\Users\\\\camil\\\\Desktop\\\\ACCION_FUTBOL_PROYECTO\\\\skeleton-loader-utils.js\" -Destination \"C:\\\\Users\\\\camil\\\\Desktop\\\\ACCION_FUTBOL_ENTRENADOR\\\\\")",
+      "PowerShell(Copy-Item -Path \"C:\\\\Users\\\\camil\\\\Desktop\\\\ACCION_FUTBOL_PROYECTO\\\\skeleton-loader-utils.js\" -Destination \"C:\\\\Users\\\\camil\\\\Desktop\\\\ACCION_FUTBOL_PROYECTO\\\\PORTAL APODERADO\\\\\")"
+    ]
+  }
+}

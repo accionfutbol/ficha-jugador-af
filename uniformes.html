@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Entrega de Uniformes · Acción Fútbol</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e0e12;--panel:#16161d;--panel2:#1e1e27;--line:#2a2a35;--ink:#f2f2f5;--muted:#9a9aa8;--muted2:#6f6f7d;--pink:#ff2e93;--ok:#27c281;--red:#ff4d5e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:640px;margin:0 auto;padding:20px 16px 90px}
+h1{font-family:'Oswald';font-weight:700;font-size:26px;text-transform:uppercase;letter-spacing:.03em;margin:0 0 2px}
+h1 em{color:var(--pink);font-style:normal}
+.sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.field{margin-bottom:12px}
+label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:5px}
+input,select{width:100%;box-sizing:border-box;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:14px;color:var(--ink);font-family:inherit}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;background:var(--pink);color:#fff;font-family:'Oswald';font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.err{color:var(--red);font-size:13px;margin-top:8px;min-height:16px}
+.hidden{display:none!important}
+.backhome{display:inline-flex;align-items:center;gap:6px;background:var(--pink);color:#fff;text-decoration:none;font-family:'Oswald';font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;padding:9px 18px;border-radius:10px;margin-bottom:14px;transition:filter .15s}
+.backhome:hover{filter:brightness(1.08)}
+.logout{position:absolute;top:16px;right:16px;color:var(--muted);font-size:13px;cursor:pointer}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.sc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 6px;text-align:center}
+.sc .v{font-family:'Oswald';font-size:22px;font-weight:700}
+.sc .l{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.player{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.pname{flex:1;min-width:0}
+.pn{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prut{font-size:11px;color:var(--muted2)}
+.pfecha{font-size:11px;color:var(--ok);margin-top:2px}
+.marks{display:flex;gap:6px;flex-shrink:0}
+.mk{min-width:52px;height:40px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);border-radius:10px;font-family:'Oswald';font-weight:600;font-size:14px;cursor:pointer;transition:.12s}
+.mk.ok.on{background:var(--ok);border-color:var(--ok);color:#04231a}
+.mk.no.on{background:var(--red);border-color:var(--red);color:#2a0708}
+.savebar{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--bg) 30%);padding:16px;z-index:40}
+.savebar .inner{max-width:640px;margin:0 auto}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 20px;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.loader{text-align:center;color:var(--muted);padding:24px;font-size:14px}
+</style>
+</head>
+<body>
+
+<a class="backhome" href="/">&#8592; Inicio</a>
+
+<!-- LOGIN -->
+<div id="login" class="wrap">
+  <div style="height:30px"></div>
+  <h1>Entrega de <em>Uniformes</em></h1>
+  <p class="sub">Acción Fútbol · Portal del Entrenador</p>
+  <div class="card">
+    <div class="field"><label>Correo</label><input type="email" id="email" autocomplete="username"></div>
+    <div class="field"><label>Contraseña</label><input type="password" id="pass" autocomplete="current-password"></div>
+    <button class="btn" id="btn-login">Ingresar</button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="wrap hidden">
+  <div class="logout" id="btn-logout">Salir</div>
+  <h1>Entrega de <em>Uniformes</em></h1>
+  <p class="sub">Elige sede y categoría, carga la lista y marca OK (entregado) o NO.</p>
+
+  <div class="card">
+    <div class="field">
+      <label>Sede y categoría</label>
+      <select id="sedecat"><option value="">Cargando...</option></select>
+    </div>
+    <button class="btn" id="btn-cargar">Cargar lista</button>
+    <div class="err" id="app-err"></div>
+  </div>
+
+  <div id="roster-wrap" class="hidden">
+    <div class="summary" id="summary"></div>
+    <div id="roster"></div>
+  </div>
+</div>
+
+<div class="savebar hidden" id="savebar"><div class="inner">
+  <button class="btn" id="btn-guardar">Guardar entrega</button>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_ASIS = 'https://script.google.com/macros/s/AKfycbwa53UNt6Q1MmxCt9g8EGB63Hu_r-UqzUQ1Uh51YWfe5ZuZCFTSVenPFLUGOVnghbIt/exec';
+const firebaseConfig = {
+  apiKey: "AIzaSyDZZsCyfgVTBOswlFPrbdf_pr7uzmQgnTs",
+  authDomain: "asistencia-accion-futbol.firebaseapp.com",
+  projectId: "asistencia-accion-futbol",
+  storageBucket: "asistencia-accion-futbol.firebasestorage.app",
+  messagingSenderId: "1007230869241",
+  appId: "1:1007230869241:web:d11ce0c37a820325cecc28"
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+const $ = id => document.getElementById(id);
+let ROSTER = [];
+
+/* Login */
+$('btn-login').onclick = async () => {
+  const e=$('email').value.trim(), p=$('pass').value;
+  $('login-err').textContent='';
+  if(!e||!p){ $('login-err').textContent='Ingresa correo y contraseña.'; return; }
+  $('btn-login').disabled=true;
+  try{ await fbAuth.signInWithEmailAndPassword(e,p); }
+  catch(x){ $('login-err').textContent='Correo o contraseña incorrectos.'; }
+  $('btn-login').disabled=false;
+};
+$('btn-logout').onclick=()=>fbAuth.signOut();
+$('pass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('btn-login').click(); });
+
+fbAuth.onAuthStateChanged(async u=>{
+  if(u){ $('login').classList.add('hidden'); $('app').classList.remove('hidden'); await cargarConfig(); }
+  else { $('app').classList.add('hidden'); $('savebar').classList.add('hidden'); $('login').classList.remove('hidden'); }
+});
+async function token(){ const u=fbAuth.currentUser; if(!u) throw new Error('Sesión no iniciada'); return await u.getIdToken(); }
+
+/* Config (sedes+categorías) */
+async function cargarConfig(){
+  try{
+    const t=await token();
+    const res=await fetch(API_ASIS+'?action=config&idToken='+encodeURIComponent(t));
+    const data=await res.json();
+    const sel=$('sedecat');
+    if(!data.sedes){ sel.innerHTML='<option value="">Sin datos</option>'; return; }
+    sel.innerHTML='<option value="">Selecciona...</option>'+data.sedes.map(s=>'<option value="'+esc(s.sede)+'||'+esc(s.categoria)+'">'+esc(s.sede)+' · '+esc(s.categoria)+'</option>').join('');
+  }catch(e){ $('sedecat').innerHTML='<option value="">Error al cargar</option>'; }
+}
+
+/* Cargar lista */
+$('btn-cargar').onclick=async ()=>{
+  const val=$('sedecat').value;
+  $('app-err').textContent='';
+  if(!val){ $('app-err').textContent='Elige sede y categoría.'; return; }
+  const parts=val.split('||'), sede=parts[0], cat=parts[1];
+  $('btn-cargar').disabled=true; $('roster').innerHTML='<div class="loader">Cargando lista...</div>'; $('roster-wrap').classList.remove('hidden');
+  try{
+    const t=await token();
+    const q='?action=uniroster&sede='+encodeURIComponent(sede)+'&cat='+encodeURIComponent(cat)+'&idToken='+encodeURIComponent(t);
+    const res=await fetch(API_ASIS+q);
+    const data=await res.json();
+    if(data.error){ $('app-err').textContent=data.error; $('roster').innerHTML=''; $('savebar').classList.add('hidden'); $('btn-cargar').disabled=false; return; }
+    ROSTER=data.jugadores||[];
+    renderRoster();
+    $('savebar').classList.remove('hidden');
+  }catch(e){ $('app-err').textContent='No se pudo cargar la lista.'; $('roster').innerHTML=''; }
+  $('btn-cargar').disabled=false;
+};
+
+function renderRoster(){
+  let html='';
+  ROSTER.forEach((p,i)=>{
+    const e=(p.estado||'').toUpperCase();
+    html+='<div class="player"><div class="pname"><div class="pn">'+esc(p.nombre)+'</div>'+
+          (p.rut?'<div class="prut">'+esc(p.rut)+'</div>':'')+
+          (e==='OK'&&p.fecha?'<div class="pfecha">'+esc(p.fecha)+'</div>':'')+
+          '</div><div class="marks">'+
+          '<button class="mk ok'+(e==='OK'?' on':'')+'" data-i="'+i+'" data-v="OK">OK</button>'+
+          '<button class="mk no'+(e==='NO'?' on':'')+'" data-i="'+i+'" data-v="NO">NO</button>'+
+          '</div></div>';
+  });
+  $('roster').innerHTML=html;
+  $('roster').querySelectorAll('.mk').forEach(b=>{
+    b.onclick=()=>{ const i=+b.dataset.i, v=b.dataset.v; ROSTER[i].estado=(ROSTER[i].estado===v?'':v); renderRoster(); };
+  });
+  updateSummary();
+}
+function updateSummary(){
+  let ok=0,no=0,pend=0;
+  ROSTER.forEach(p=>{ const e=(p.estado||'').toUpperCase(); if(e==='OK')ok++; else if(e==='NO')no++; else pend++; });
+  $('summary').innerHTML=
+    '<div class="sc"><div class="v" style="color:var(--ok)">'+ok+'</div><div class="l">Entregado</div></div>'+
+    '<div class="sc"><div class="v" style="color:var(--red)">'+no+'</div><div class="l">No entregado</div></div>'+
+    '<div class="sc"><div class="v" style="color:var(--muted)">'+pend+'</div><div class="l">Pendiente</div></div>';
+}
+
+/* Guardar */
+$('btn-guardar').onclick=async ()=>{
+  const marcas=ROSTER.filter(p=>p.estado).map(p=>({rut:p.rut,nombre:p.nombre,val:p.estado}));
+  if(!marcas.length){ toast('No hay nada que guardar'); return; }
+  const val=$('sedecat').value, parts=val.split('||');
+  $('btn-guardar').disabled=true; $('btn-guardar').textContent='Guardando...';
+  try{
+    const t=await token();
+    const res=await fetch(API_ASIS,{method:'POST',body:JSON.stringify({action:'unisave',idToken:t,sede:parts[0],cat:parts[1],marcas:marcas})});
+    const data=await res.json();
+    if(data.error){ toast('Error: '+data.error); } else { toast('Guardado ('+data.escritos+')'); }
+  }catch(e){ toast('No se pudo guardar. Revisa la conexión.'); }
+  $('btn-guardar').disabled=false; $('btn-guardar').textContent='Guardar entrega';
+};
+
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+function esc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+</script>
+</body>
+</html>

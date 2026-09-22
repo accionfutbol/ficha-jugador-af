@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Acción Fútbol · Citación Amistosos</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0c0e;--panel:#161619;--panel2:#1f1f24;--line:#2a2a30;--pink:#ff2e93;--ink:#f5f5f7;--muted:#9a9aa3;--muted2:#5c5c66;--ok:#27c281;--red:#ff4d5e;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+.wrap{max-width:640px;margin:0 auto;padding:52px 16px 110px}
+h1{font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:26px;letter-spacing:.02em;margin-bottom:4px}
+h1 em{color:var(--pink);font-style:normal}
+.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;font-weight:600}
+input,select{width:100%;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;color:var(--ink);font-size:15px;font-family:'Inter';padding:13px 14px;outline:none}
+select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239a9aa3' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px}
+input:focus,select:focus{border-color:var(--pink)}
+.field{margin-bottom:14px}
+.row2{display:flex;gap:10px}.row2>div{flex:1}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;background:var(--pink);color:#fff;font-family:'Oswald';font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
+.hidden{display:none}
+.logout{position:fixed;top:14px;right:14px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:11px;color:var(--muted);cursor:pointer;z-index:50}
+.backhome{position:fixed;top:14px;left:14px;background:var(--pink);border:none;border-radius:8px;padding:7px 13px;font-size:11px;font-family:'Oswald';font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#fff;cursor:pointer;z-index:50;text-decoration:none}
+.err{background:rgba(255,77,94,.1);border:1px solid rgba(255,77,94,.3);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--red);margin-top:10px;display:none}
+.loader{text-align:center;color:var(--muted);padding:24px;font-size:14px}
+.turnos{display:flex;gap:10px;margin-bottom:14px}
+.turnos .t{flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--muted);font-family:'Oswald';font-weight:700;font-size:15px;letter-spacing:.05em;cursor:pointer;text-align:center}
+.turnos .t.on{background:var(--pink);border-color:var(--pink);color:#fff}
+.pcheck{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:8px;cursor:pointer}
+.pcheck.on{border-color:var(--pink);background:rgba(255,46,147,.08)}
+.pcheck .box{width:24px;height:24px;border-radius:7px;border:2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff}
+.pcheck.on .box{background:var(--pink);border-color:var(--pink)}
+.pcheck .pn{font-weight:600;font-size:15px}
+.count{font-size:12px;color:var(--muted);margin:2px 0 12px}
+.savebar{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--bg) 30%);padding:16px;z-index:40}
+.savebar .inner{max-width:640px;margin:0 auto}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 20px;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<a class="backhome" href="/">&#8592; Inicio</a>
+
+<!-- LOGIN -->
+<div id="login" class="wrap">
+  <h1>Citación <em>Amistosos</em></h1>
+  <p class="sub">Acción Fútbol · Portal del Entrenador</p>
+  <div class="card">
+    <div class="field"><label>Correo</label><input type="email" id="email" autocomplete="username"></div>
+    <div class="field"><label>Contraseña</label><input type="password" id="pass" autocomplete="current-password"></div>
+    <button class="btn" id="btn-login">Ingresar</button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="wrap hidden">
+  <div class="logout" id="btn-logout">Salir</div>
+  <h1>Citación <em>Partidos Amistosos</em></h1>
+  <p class="sub">Crea una citación y marca a los jugadores citados.</p>
+  <div class="card">
+    <label>Turno</label>
+    <div class="turnos">
+      <div class="t on" id="t-am" data-t="AM">Senior AM</div>
+      <div class="t" id="t-pm" data-t="PM">Senior PM</div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Fecha</label><input type="date" id="fecha"></div>
+      <div class="field"><label>Hora</label><input type="time" id="hora"></div>
+    </div>
+    <div class="field"><label>Rival</label><input type="text" id="rival" placeholder="Ej: Deportivo X"></div>
+    <div class="field"><label>Lugar / Cancha</label><input type="text" id="lugar" placeholder="Ej: Complejo Las Condes"></div>
+    <button class="btn btn-ghost" id="btn-cargar">Cargar jugadores del turno</button>
+    <div class="err" id="app-err"></div>
+  </div>
+  <div id="lista-wrap" class="hidden">
+    <div class="count" id="count"></div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn btn-ghost" id="btn-todos" style="flex:1;padding:10px;font-size:12px">Seleccionar todos</button>
+      <button class="btn btn-ghost" id="btn-ninguno" style="flex:1;padding:10px;font-size:12px">Ninguno</button>
+    </div>
+    <div id="lista"></div>
+  </div>
+</div>
+
+<div class="savebar hidden" id="savebar"><div class="inner"><button class="btn" id="btn-guardar">Guardar citación</button></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API_ASIS = 'https://script.google.com/macros/s/AKfycbwa53UNt6Q1MmxCt9g8EGB63Hu_r-UqzUQ1Uh51YWfe5ZuZCFTSVenPFLUGOVnghbIt/exec';
+const firebaseConfig = {
+  apiKey: "AIzaSyDZZsCyfgVTBOswlFPrbdf_pr7uzmQgnTs",
+  authDomain: "asistencia-accion-futbol.firebaseapp.com",
+  projectId: "asistencia-accion-futbol",
+  storageBucket: "asistencia-accion-futbol.firebasestorage.app",
+  messagingSenderId: "1007230869241",
+  appId: "1:1007230869241:web:d11ce0c37a820325cecc28"
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+const $ = id => document.getElementById(id);
+let TURNO='AM', PLANTEL=[], SEL={};
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+function showErr(id,m){ const e=$(id); e.textContent=m; e.style.display='block'; }
+function hideErr(id){ $(id).style.display='none'; }
+async function token(){ const u=fbAuth.currentUser; if(!u) throw new Error('Sesión no iniciada'); return await u.getIdToken(); }
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+$('btn-login').onclick=async ()=>{
+  hideErr('login-err');
+  const email=$('email').value.trim(), pass=$('pass').value;
+  if(!email||!pass){ showErr('login-err','Ingresa correo y contraseña.'); return; }
+  $('btn-login').disabled=true;
+  try{ await fbAuth.signInWithEmailAndPassword(email,pass); }
+  catch(e){ showErr('login-err',(e.code==='auth/invalid-credential'||e.code==='auth/wrong-password')?'Contraseña incorrecta.':(e.message||'Error')); }
+  $('btn-login').disabled=false;
+};
+$('btn-logout').onclick=()=>fbAuth.signOut();
+fbAuth.onAuthStateChanged(u=>{
+  if(u){ $('login').classList.add('hidden'); $('app').classList.remove('hidden'); $('fecha').value=todayStr(); }
+  else { $('app').classList.add('hidden'); $('login').classList.remove('hidden'); $('savebar').classList.add('hidden'); }
+});
+
+document.querySelectorAll('.turnos .t').forEach(el=>el.onclick=()=>{
+  document.querySelectorAll('.turnos .t').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on'); TURNO=el.dataset.t;
+  $('lista-wrap').classList.add('hidden'); $('savebar').classList.add('hidden'); PLANTEL=[]; SEL={};
+});
+
+$('btn-cargar').onclick=async ()=>{
+  hideErr('app-err');
+  $('lista-wrap').classList.remove('hidden'); $('lista').innerHTML='<div class="loader">Cargando…</div>'; $('count').textContent='';
+  try{
+    const t=await token();
+    const res=await fetch(API_ASIS+'?action=srplantel&turno='+TURNO+'&idToken='+encodeURIComponent(t));
+    const data=await res.json();
+    if(data.error){ $('lista').innerHTML='<div class="loader">'+esc(data.error)+'</div>'; return; }
+    PLANTEL=data.jugadores||[]; SEL={};
+    render();
+    $('savebar').classList.remove('hidden');
+  }catch(e){ $('lista').innerHTML='<div class="loader">No se pudo cargar.</div>'; }
+};
+
+function render(){
+  const n=Object.keys(SEL).filter(k=>SEL[k]).length;
+  $('count').textContent=n+' citados de '+PLANTEL.length+' · Senior '+TURNO;
+  if(!PLANTEL.length){ $('lista').innerHTML='<div class="loader">Sin jugadores.</div>'; return; }
+  $('lista').innerHTML=PLANTEL.map((p,i)=>'<div class="pcheck'+(SEL[i]?' on':'')+'" data-i="'+i+'"><div class="box">'+(SEL[i]?'✓':'')+'</div><div class="pn">'+esc(p.nombre)+'</div></div>').join('');
+  document.querySelectorAll('.pcheck').forEach(b=>b.onclick=()=>{ const i=+b.dataset.i; SEL[i]=!SEL[i]; render(); });
+}
+$('btn-todos').onclick=()=>{ PLANTEL.forEach((p,i)=>SEL[i]=true); render(); };
+$('btn-ninguno').onclick=()=>{ SEL={}; render(); };
+
+$('btn-guardar').onclick=async ()=>{
+  const citados=PLANTEL.filter((p,i)=>SEL[i]).map(p=>p.nombre);
+  if(!citados.length){ toast('Marca al menos un jugador'); return; }
+  if(!$('rival').value.trim()){ toast('Escribe el rival'); return; }
+  const body={action:'srcitsave', turno:TURNO, fecha:$('fecha').value, hora:$('hora').value,
+    rival:$('rival').value.trim(), lugar:$('lugar').value.trim(), citados:citados.join(', ')};
+  $('btn-guardar').disabled=true; $('btn-guardar').textContent='Guardando...';
+  try{
+    body.idToken=await token();
+    const res=await fetch(API_ASIS,{method:'POST',body:JSON.stringify(body)});
+    const data=await res.json();
+    if(data.error) toast('Error: '+data.error);
+    else{ toast('Citación guardada ('+citados.length+' jugadores)'); SEL={}; render(); }
+  }catch(e){ toast('No se pudo guardar.'); }
+  $('btn-guardar').disabled=false; $('btn-guardar').textContent='Guardar citación';
+};
+</script>
+</body>
+</html>

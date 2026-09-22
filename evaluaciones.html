@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Acción Fútbol · Evaluaciones</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0c0e;--panel:#161619;--panel2:#1f1f24;--line:#2a2a30;--pink:#ff2e93;--ink:#f5f5f7;--muted:#9a9aa3;--muted2:#5c5c66;--ok:#27c281;--warn:#ffb020;--blue:#64c8ff;--red:#ff4d5e;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+.wrap{max-width:640px;margin:0 auto;padding:52px 16px 60px}
+h1{font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:26px;letter-spacing:.02em;margin-bottom:4px}
+h1 em{color:var(--pink);font-style:normal}
+.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;font-weight:600}
+input,select,textarea{width:100%;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;color:var(--ink);font-size:15px;font-family:'Inter';padding:13px 14px;outline:none}
+select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239a9aa3' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px}
+input:focus,select:focus,textarea:focus{border-color:var(--pink)}
+.field{margin-bottom:14px}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;background:var(--pink);color:#fff;font-family:'Oswald';font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
+.hidden{display:none}
+.logout{position:fixed;top:14px;right:14px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:11px;color:var(--muted);cursor:pointer;z-index:50}
+.backhome{position:fixed;top:14px;left:14px;background:var(--pink);border:none;border-radius:8px;padding:7px 13px;font-size:11px;font-family:'Oswald';font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#fff;cursor:pointer;z-index:50;text-decoration:none}
+.err{background:rgba(255,77,94,.1);border:1px solid rgba(255,77,94,.3);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--red);margin-top:10px;display:none}
+.loader{text-align:center;color:var(--muted);padding:30px;font-size:14px}
+.cat-head{font-family:'Oswald';font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--pink);border-radius:10px;padding:11px 14px;margin:6px 0 12px}
+.pl{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:.12s}
+.pl:hover{border-color:var(--pink)}
+.pl .info{flex:1;min-width:0}
+.pl .pn{font-weight:600;font-size:15px;line-height:1.25}
+.pl .pmeta{font-size:11px;color:var(--muted2);margin-top:2px}
+.promwrap{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0}
+.promcap{font-size:8.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted2);font-weight:600}
+.prom{font-family:'Oswald';font-weight:700;font-size:20px;min-width:56px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--panel2);border:1.5px solid var(--line)}
+.prom.g6{background:rgba(255,46,147,.14);border-color:var(--pink);color:var(--pink)}
+.prom.g5{background:rgba(39,194,129,.14);border-color:var(--ok);color:var(--ok)}
+.prom.g4{background:rgba(255,176,32,.14);border-color:var(--warn);color:var(--warn)}
+.prom.g0{background:rgba(255,77,94,.14);border-color:var(--red);color:var(--red)}
+.est{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:5px;margin-left:6px;vertical-align:middle}
+.est.new{background:rgba(100,200,255,.16);color:var(--blue)}
+.est.full{background:rgba(255,46,147,.16);color:var(--pink)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-start;justify-content:center;z-index:70;padding:18px;overflow-y:auto}
+.modal-bg.hidden{display:none}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:460px;width:100%;padding:20px;margin:auto}
+.modal-h{font-family:'Oswald';font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:.04em;color:var(--pink)}
+.modal-name{font-size:15px;font-weight:600;margin:2px 0 6px}
+.modal-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 5px;font-weight:600}
+.row2{display:flex;gap:10px}
+.row2>div{flex:1}
+.notes{display:flex;gap:8px}
+.notes>div{flex:1}
+.escala-tag{font-size:11.5px;color:var(--pink);font-weight:600;margin-top:10px;line-height:1.35}
+.guia{margin-top:8px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.4}
+.guia .gl{margin-bottom:6px}
+.guia .gl:last-child{margin-bottom:0}
+.guia b{color:var(--ink)}
+.escala{margin-top:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.escala .er{border-bottom:1px solid var(--line);padding:9px 11px;font-size:11.5px;line-height:1.35}
+.escala .er:last-child{border-bottom:none}
+.escala .en{display:inline-block;font-family:'Oswald';font-weight:700;color:var(--pink);font-size:15px;margin-bottom:3px}
+.escala .ed{margin:2px 0;color:var(--muted)}
+.escala .ed b{color:var(--ink)}
+.prombox{margin-top:14px;background:var(--panel2);border:1.5px solid var(--pink);border-radius:12px;padding:12px;text-align:center}
+.prombox .v{font-family:'Oswald';font-weight:700;font-size:30px;color:var(--pink)}
+.prombox .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.modal-actions{display:flex;gap:10px;margin-top:16px}
+.modal-actions .btn{width:auto;flex:1;padding:12px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 20px;font-size:14px;z-index:90;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.count{font-size:12px;color:var(--muted);margin:2px 0 12px}
+</style>
+</head>
+<body>
+
+<a class="backhome" href="/">&#8592; Inicio</a>
+
+<!-- LOGIN -->
+<div id="login" class="wrap">
+  <h1>Evaluaciones</h1>
+  <p class="sub">Acción Fútbol · Portal del Entrenador</p>
+  <div class="card">
+    <div class="field"><label>Correo</label><input type="email" id="email" autocomplete="username"></div>
+    <div class="field"><label>Contraseña</label><input type="password" id="pass" autocomplete="current-password"></div>
+    <button class="btn" id="btn-login">Ingresar</button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="wrap hidden">
+  <div class="logout" id="btn-logout">Salir</div>
+  <h1>Evaluaciones</h1>
+  <p class="sub">Elige sede y categoría, luego toca un jugador para editar su evaluación.</p>
+  <div class="card">
+    <div class="field"><label>Sede y categoría</label><select id="sedecat"><option value="">Cargando...</option></select></div>
+    <button class="btn" id="btn-cargar">Cargar jugadores</button>
+    <div class="err" id="app-err"></div>
+  </div>
+  <div id="lista-wrap" class="hidden">
+    <div class="count" id="count"></div>
+    <div id="lista"></div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div class="modal-bg hidden" id="ed-modal">
+  <div class="modal">
+    <div class="modal-h">Evaluación</div>
+    <div class="modal-name" id="ed-nombre"></div>
+    <div class="row2">
+      <div><div class="modal-lbl">Nivel</div><select id="ed-nivel"></select></div>
+      <div><div class="modal-lbl">Sub-nivel</div><select id="ed-subnivel"></select></div>
+    </div>
+    <div class="row2">
+      <div><div class="modal-lbl">Posición principal</div><select id="ed-posPrin"></select></div>
+      <div><div class="modal-lbl">Posición secundaria</div><select id="ed-posSec"></select></div>
+    </div>
+    <div class="row2">
+      <div><div class="modal-lbl">Pie hábil</div><select id="ed-pie"></select></div>
+      <div><div class="modal-lbl">Torneo 1er sem.</div><select id="ed-tor1"></select></div>
+    </div>
+    <div class="modal-lbl">Torneo 2do sem.</div><select id="ed-tor2"></select>
+    <div class="modal-lbl">Notas del semestre (1 a 7)</div>
+    <div class="notes">
+      <div><div class="modal-lbl" style="margin-top:0">Técnica</div><input type="number" id="ed-notaTec" min="1" max="7" step="0.1" inputmode="decimal"></div>
+      <div><div class="modal-lbl" style="margin-top:0">Física</div><input type="number" id="ed-notaFis" min="1" max="7" step="0.1" inputmode="decimal"></div>
+      <div><div class="modal-lbl" style="margin-top:0">Actitudinal</div><input type="number" id="ed-notaAct" min="1" max="7" step="0.1" inputmode="decimal"></div>
+    </div>
+    <div id="ed-escala-tag" class="escala-tag"></div>
+    <div id="ed-guia" class="guia hidden"></div>
+    <button type="button" class="btn btn-ghost" id="ed-verescala" style="margin-top:10px;padding:10px;font-size:12px">Ver escala completa</button>
+    <div id="ed-escala" class="escala hidden"></div>
+    <div class="prombox"><div class="v" id="ed-prom">—</div><div class="l">Promedio (automático)</div></div>
+    <div class="modal-lbl">Comentario / observación</div>
+    <textarea id="ed-comentario" rows="4" placeholder="Escribe la observación del jugador..."></textarea>
+    <div class="err" id="ed-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="ed-cerrar">Cerrar</button>
+      <button class="btn" id="ed-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_ASIS = 'https://script.google.com/macros/s/AKfycbwa53UNt6Q1MmxCt9g8EGB63Hu_r-UqzUQ1Uh51YWfe5ZuZCFTSVenPFLUGOVnghbIt/exec';
+const firebaseConfig = {
+  apiKey: "AIzaSyDZZsCyfgVTBOswlFPrbdf_pr7uzmQgnTs",
+  authDomain: "asistencia-accion-futbol.firebaseapp.com",
+  projectId: "asistencia-accion-futbol",
+  storageBucket: "asistencia-accion-futbol.firebasestorage.app",
+  messagingSenderId: "1007230869241",
+  appId: "1:1007230869241:web:d11ce0c37a820325cecc28"
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+
+const $ = id => document.getElementById(id);
+let ROSTER = [], OPC = {}, EDIT_I = null;
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+function showErr(id,m){ const e=$(id); e.textContent=m; e.style.display='block'; }
+function hideErr(id){ $(id).style.display='none'; }
+async function token(){ const u=fbAuth.currentUser; if(!u) throw new Error('Sesión no iniciada'); return await u.getIdToken(); }
+
+/* ── Login ── */
+$('btn-login').onclick = async ()=>{
+  hideErr('login-err');
+  const email=$('email').value.trim(), pass=$('pass').value;
+  if(!email||!pass){ showErr('login-err','Ingresa correo y contraseña.'); return; }
+  $('btn-login').disabled=true;
+  try{ await fbAuth.signInWithEmailAndPassword(email,pass); }
+  catch(e){ showErr('login-err', (e.code==='auth/invalid-credential'||e.code==='auth/wrong-password')?'Contraseña incorrecta.':(e.message||'Error')); }
+  $('btn-login').disabled=false;
+};
+$('btn-logout').onclick = ()=>fbAuth.signOut();
+fbAuth.onAuthStateChanged(async user=>{
+  if(user){ $('login').classList.add('hidden'); $('app').classList.remove('hidden'); await cargarConfig(); }
+  else { $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+});
+
+/* ── Config (sede+categoría) ── */
+async function cargarConfig(){
+  try{
+    const t=await token();
+    const res=await fetch(API_ASIS+'?action=evalconfig&idToken='+encodeURIComponent(t));
+    const data=await res.json();
+    const sel=$('sedecat');
+    if(data.error){ sel.innerHTML='<option value="">Sin datos</option>'; showErr('app-err','Backend: '+data.error); return; }
+    if(!data.sedes||!data.sedes.length){ sel.innerHTML='<option value="">Sin datos</option>'; showErr('app-err','El backend no devolvió sedes. ¿Redesplegaste la Versión nueva y compartiste la planilla con informacion@?'); return; }
+    sel.innerHTML='<option value="">Selecciona...</option>'+data.sedes.map(x=>'<option value="'+esc(x.sede)+'||'+esc(x.categoria)+'">'+esc(x.sede)+' · '+esc(x.categoria)+'</option>').join('');
+  }catch(e){ $('sedecat').innerHTML='<option value="">Error de conexión</option>'; }
+}
+
+/* ── Cargar jugadores ── */
+$('btn-cargar').onclick = async ()=>{
+  hideErr('app-err');
+  const val=$('sedecat').value;
+  if(!val){ showErr('app-err','Elige sede y categoría.'); return; }
+  const parts=val.split('||');
+  $('lista-wrap').classList.remove('hidden');
+  $('lista').innerHTML='<div class="loader">Cargando jugadores...</div>';
+  $('count').textContent='';
+  try{
+    const t=await token();
+    const res=await fetch(API_ASIS+'?action=evalroster&sede='+encodeURIComponent(parts[0])+'&cat='+encodeURIComponent(parts[1])+'&idToken='+encodeURIComponent(t));
+    const data=await res.json();
+    if(data.error){ $('lista').innerHTML='<div class="loader">'+esc(data.error)+'</div>'; return; }
+    ROSTER=data.jugadores||[]; OPC=data.opciones||{};
+    renderLista(parts[0],parts[1]);
+  }catch(e){ $('lista').innerHTML='<div class="loader">No se pudo cargar.</div>'; }
+};
+
+function fmtProm(v){ const n=parseFloat(String(v).replace(',','.')); if(isNaN(n))return'—'; return (Math.round(n*10)/10).toFixed(1); }
+function promClass(v){ const n=parseFloat(String(v).replace(',','.')); if(isNaN(n))return''; if(n>=6)return'g6'; if(n>=5)return'g5'; if(n>=4)return'g4'; return'g0'; }
+function estBadge(e){ e=(e||'').toUpperCase(); if(e==='NEW')return' <span class="est new">NEW</span>'; if(e==='FULL')return' <span class="est full">FULL</span>'; return''; }
+
+function renderLista(sede,cat){
+  $('count').textContent=ROSTER.length+' jugadores · '+sede+' · '+cat;
+  if(!ROSTER.length){ $('lista').innerHTML='<div class="loader">Sin jugadores ACTIVO/FULL/NEW para esta selección.</div>'; return; }
+  $('lista').innerHTML='<div class="cat-head">'+esc(sede)+' · '+esc(cat)+'</div>'+
+    ROSTER.map((p,i)=>'<div class="pl" data-i="'+i+'">'+
+      '<div class="info"><div class="pn">'+esc(p.nombre)+estBadge(p.estado)+'</div>'+
+      '<div class="pmeta">'+[p.posPrin,p.nivel,p.subnivel].filter(Boolean).map(esc).join(' · ')+'</div></div>'+
+      '<div class="promwrap"><div class="promcap">Promedio</div>'+
+      '<div class="prom '+promClass(p.promedio)+'">'+fmtProm(p.promedio)+'</div></div>'+
+    '</div>').join('');
+  document.querySelectorAll('.pl').forEach(el=>el.onclick=()=>abrirEdit(+el.dataset.i));
+}
+
+/* ── Escalas de evaluación (rúbricas) ── */
+const RUBRICA={
+ COMP:{ nombre:'Competitivo → Alto Rendimiento',
+  tec:['','Dificultades para controlar el balón; no comprende conceptos tácticos básicos.','Técnica básica limitada; errores frecuentes en decisiones de juego.','Ejecuta técnica con dificultad bajo presión; táctica aún mecánica.','Técnica útil en contextos controlados; reconoce espacios y funciones tácticas.','Ejecuta con confianza bajo presión; tácticamente adaptable en partido.','Técnica pulida; decisiones efectivas y anticipadas; cumple funciones tácticas con solvencia.','Dominio técnico en situaciones exigentes; liderazgo táctico en cancha.'],
+  fis:['','Baja resistencia, fuerza y velocidad; fatiga rápida.','Rendimiento físico inestable; problemas para mantener la intensidad.','Nivel físico aceptable pero irregular en esfuerzos de alta intensidad.','Buena base física; comienza a resistir demandas competitivas.','Buen nivel aeróbico y fuerza funcional; recuperación rápida.','Alta capacidad física sostenida; explosividad y resistencia equilibradas.','Preparación física óptima para la categoría; destaca en todas las pruebas.'],
+  act:['','Falta de compromiso; actitud pasiva en entrenamientos.','Poco enfoque; escasa responsabilidad en su rol.','Mejora en la disciplina; necesita guía constante.','Asume tareas con más autonomía; responde a retroalimentación.','Mentalidad competitiva emergente; liderazgo ocasional.','Alta motivación; cumple objetivos; modelo para compañeros.','Profesionalismo evidente; listo para entornos de alto rendimiento.'],
+  interp:'4 o menos: aún en etapa formativa. · 5: umbral de rendimiento competitivo, seguimiento cercano. · 6-7: listo para consolidarse en alto rendimiento.'
+ },
+ AR:{ nombre:'Alto Rendimiento → Proyecto Profesional',
+  tec:['','Dificultades para sostener la técnica bajo presión profesional; decisiones lentas y erráticas.','Técnica intermitente en juego real; aplica conceptos tácticos de forma rígida.','Ejecuta con solidez en situaciones controladas; comienza a responder ante exigencias tácticas reales.','Técnica y visión de juego útiles en contextos profesionales; responde con lógica táctica.','Seguridad técnica en ritmo profesional; se adapta a distintos sistemas de juego.','Alta eficiencia técnica en velocidad de juego profesional; decisiones precisas.','Control absoluto del balón en cualquier contexto; influencia táctica dominante.'],
+  fis:['','No alcanza el estándar físico profesional; fatiga en esfuerzos prolongados.','Desempeño físico inestable en tareas de alta intensidad o frecuencia competitiva.','Capacidad física adecuada, con dificultad para sostener ritmo profesional sostenido.','Buen desarrollo físico general; responde a la mayoría de exigencias competitivas.','Fuerte capacidad física con buena recuperación; rendimiento estable en entrenamientos y partidos.','Potencia, resistencia y agilidad de nivel profesional; rendimiento consistente.','Condición física igual o superior a estándares profesionales; se impone en pruebas y partidos.'],
+  act:['','Desconexión con las exigencias del entorno profesional; falta de responsabilidad deportiva.','Motivación variable; necesita supervisión constante para sostener la disciplina.','Mejora en hábitos extradeportivos; actitud positiva pero dependiente de estímulos externos.','Muestra autonomía en la preparación diaria; responde a desafíos con compromiso.','Mentalidad competitiva clara; asume responsabilidades y muestra liderazgo emergente.','Enfoque maduro y profesional; referente dentro del grupo.','Actitud profesional consolidada; preparado mental y emocionalmente para competir al más alto nivel.'],
+  interp:'4 o menos: fortalecer áreas clave antes de una posible inclusión profesional. · 5: umbral profesional, seguimiento individualizado. · 6-7: proyectable a estructuras profesionales / planteles de élite.'
+ }
+};
+function scaleKey(){ const v=($('ed-nivel').value||'').toUpperCase(); if(v.indexOf('A.R')>=0||v.indexOf('ALTO')>=0)return'AR'; if(v.indexOf('COMP')>=0)return'COMP'; return''; }
+function nota1a7(id){ const n=parseFloat(String($(id).value).replace(',','.')); if(isNaN(n))return 0; const r=Math.round(n); return (r>=1&&r<=7)?r:0; }
+function renderEscala(k){
+  const R=RUBRICA[k]; let h='';
+  for(let i=1;i<=7;i++){
+    h+='<div class="er"><div class="en">'+i+'</div>'+
+      '<div class="ed"><b>Técnica:</b> '+esc(R.tec[i])+'</div>'+
+      '<div class="ed"><b>Física:</b> '+esc(R.fis[i])+'</div>'+
+      '<div class="ed"><b>Actitud:</b> '+esc(R.act[i])+'</div></div>';
+  }
+  h+='<div class="er">'+esc(R.interp)+'</div>';
+  $('ed-escala').innerHTML=h;
+}
+function updGuia(){
+  const k=scaleKey(), tag=$('ed-escala-tag'), guia=$('ed-guia'), box=$('ed-escala');
+  if(!k){ tag.textContent='Elige el Nivel del jugador para ver su escala de evaluación.'; guia.classList.add('hidden'); box.classList.add('hidden'); $('ed-verescala').textContent='Ver escala completa'; return; }
+  const R=RUBRICA[k];
+  tag.textContent='Escala: '+R.nombre;
+  const rows=[['Técnica','tec','ed-notaTec'],['Física','fis','ed-notaFis'],['Actitudinal','act','ed-notaAct']];
+  let h='';
+  rows.forEach(r=>{ const n=nota1a7(r[2]); if(n) h+='<div class="gl"><b>'+r[0]+' ('+n+'):</b> '+esc(R[r[1]][n])+'</div>'; });
+  if(h){ guia.innerHTML=h; guia.classList.remove('hidden'); } else guia.classList.add('hidden');
+  if(!box.classList.contains('hidden')) renderEscala(k);
+}
+$('ed-verescala').onclick=()=>{
+  const k=scaleKey(), box=$('ed-escala');
+  if(!k){ toast('Primero elige el Nivel'); return; }
+  if(box.classList.contains('hidden')){ renderEscala(k); box.classList.remove('hidden'); $('ed-verescala').textContent='Ocultar escala'; }
+  else { box.classList.add('hidden'); $('ed-verescala').textContent='Ver escala completa'; }
+};
+
+/* ── Modal editar ── */
+function fillSelect(id,opts,val){
+  const cur=val||'';
+  let has=false;
+  let html='<option value="">—</option>'+(opts||[]).map(o=>{ if(o===cur)has=true; return '<option'+(o===cur?' selected':'')+'>'+esc(o)+'</option>'; }).join('');
+  if(cur&&!has) html+='<option selected>'+esc(cur)+'</option>';   // conserva un valor que no esté en la lista
+  $(id).innerHTML=html;
+}
+function abrirEdit(i){
+  EDIT_I=i; const p=ROSTER[i]; hideErr('ed-err');
+  $('ed-nombre').innerHTML=esc(p.nombre)+estBadge(p.estado);
+  fillSelect('ed-nivel',OPC.nivel,p.nivel);
+  fillSelect('ed-subnivel',OPC.subnivel,p.subnivel);
+  fillSelect('ed-posPrin',OPC.posPrin,p.posPrin);
+  fillSelect('ed-posSec',OPC.posSec,p.posSec);
+  fillSelect('ed-pie',OPC.pie,p.pie);
+  fillSelect('ed-tor1',OPC.tor1,p.tor1);
+  fillSelect('ed-tor2',OPC.tor2,p.tor2);
+  $('ed-notaTec').value=p.notaTec||'';
+  $('ed-notaFis').value=p.notaFis||'';
+  $('ed-notaAct').value=p.notaAct||'';
+  $('ed-comentario').value=p.comentario||'';
+  $('ed-escala').classList.add('hidden'); $('ed-verescala').textContent='Ver escala completa';
+  calcProm(); updGuia();
+  $('ed-modal').classList.remove('hidden');
+}
+function calcProm(){
+  const vals=['ed-notaTec','ed-notaFis','ed-notaAct'].map(id=>parseFloat(String($(id).value).replace(',','.'))).filter(x=>!isNaN(x));
+  if(!vals.length){ $('ed-prom').textContent='—'; return ''; }
+  let m=vals.reduce((s,x)=>s+x,0)/vals.length; m=Math.round(m*10)/10; if(m<1)m=1; if(m>7)m=7;
+  $('ed-prom').textContent=m.toFixed(1); return m;
+}
+['ed-notaTec','ed-notaFis','ed-notaAct'].forEach(id=>$(id).addEventListener('input',()=>{ calcProm(); updGuia(); }));
+$('ed-nivel').addEventListener('change',updGuia);
+$('ed-cerrar').onclick=()=>{ $('ed-modal').classList.add('hidden'); EDIT_I=null; };
+$('ed-modal').addEventListener('click',e=>{ if(e.target===$('ed-modal')){ $('ed-modal').classList.add('hidden'); EDIT_I=null; } });
+
+$('ed-guardar').onclick=async ()=>{
+  if(EDIT_I==null) return;
+  const p=ROSTER[EDIT_I]; hideErr('ed-err');
+  const badNote=id=>{ const v=$(id).value.trim(); if(v==='')return false; const n=parseFloat(v.replace(',','.')); return isNaN(n)||n<1||n>7; };
+  if(badNote('ed-notaTec')||badNote('ed-notaFis')||badNote('ed-notaAct')){ showErr('ed-err','Las notas deben ser números entre 1 y 7.'); return; }
+  const body={ action:'evalsave', rut:p.rut,
+    nivel:$('ed-nivel').value, subnivel:$('ed-subnivel').value,
+    posPrin:$('ed-posPrin').value, posSec:$('ed-posSec').value, pie:$('ed-pie').value,
+    tor1:$('ed-tor1').value, tor2:$('ed-tor2').value,
+    notaTec:$('ed-notaTec').value.trim(), notaFis:$('ed-notaFis').value.trim(), notaAct:$('ed-notaAct').value.trim(),
+    comentario:$('ed-comentario').value };
+  $('ed-guardar').disabled=true; $('ed-guardar').textContent='Guardando...';
+  try{
+    body.idToken=await token();
+    const res=await fetch(API_ASIS,{method:'POST',body:JSON.stringify(body)});
+    const data=await res.json();
+    if(data.error){ showErr('ed-err','Error: '+data.error); }
+    else{
+      Object.assign(p,{nivel:body.nivel,subnivel:body.subnivel,posPrin:body.posPrin,posSec:body.posSec,pie:body.pie,tor1:body.tor1,tor2:body.tor2,notaTec:body.notaTec,notaFis:body.notaFis,notaAct:body.notaAct,comentario:body.comentario,promedio:(data.promedio!==''&&data.promedio!=null)?String(data.promedio):''});
+      const val=$('sedecat').value.split('||');
+      renderLista(val[0],val[1]);
+      $('ed-modal').classList.add('hidden'); EDIT_I=null;
+      toast('Evaluación guardada');
+    }
+  }catch(e){ showErr('ed-err','No se pudo guardar.'); }
+  $('ed-guardar').disabled=false; $('ed-guardar').textContent='Guardar';
+};
+</script>
+</body>
+</html>

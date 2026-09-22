@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acción Fútbol · Registrar Asistencia</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0c0e;--panel:#161619;--panel2:#1f1f24;--line:#2a2a30;--pink:#ff2e93;--pink-deep:#c70f6e;--ink:#f5f5f7;--muted:#9a9aa3;--muted2:#5c5c66;--ok:#27c281;--warn:#ffb020;--blue:#64c8ff;--red:#ff4d5e;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+.wrap{max-width:640px;margin:0 auto;padding:24px 16px 100px}
+h1{font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:26px;letter-spacing:.02em;margin-bottom:4px}
+h1 em{color:var(--pink);font-style:normal}
+.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;font-weight:600}
+input,select{width:100%;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;color:var(--ink);font-size:15px;font-family:'Inter';padding:13px 14px;outline:none}
+input:focus,select:focus{border-color:var(--pink)}
+.field{margin-bottom:14px}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;background:var(--pink);color:#fff;font-family:'Oswald';font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
+.hidden{display:none}
+.logout{position:fixed;top:14px;right:14px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:11px;color:var(--muted);cursor:pointer;z-index:50}
+.backhome{position:fixed;top:14px;left:14px;background:var(--pink);border:none;border-radius:8px;padding:7px 13px;font-size:11px;font-family:'Oswald';font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#fff;cursor:pointer;z-index:50;text-decoration:none}
+.backhome:hover{filter:brightness(1.1)}
+.err{background:rgba(255,77,94,.1);border:1px solid rgba(255,77,94,.3);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--red);margin-top:10px;display:none}
+.player{display:flex;flex-direction:column;align-items:stretch;gap:9px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:8px}
+.player .pname{width:100%}
+.player .pn{font-weight:600;font-size:15px;line-height:1.25}
+.est-badge{display:inline-block;font-size:9px;font-weight:700;border:1px solid;border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:middle;white-space:nowrap;letter-spacing:.02em}
+.player .prut{font-size:11px;color:var(--muted2);margin-top:1px}
+.player .pcat{display:inline-block;font-size:11px;font-weight:600;color:var(--pink);background:rgba(255,46,147,.12);border:1px solid rgba(255,46,147,.3);border-radius:6px;padding:1px 8px;margin-top:4px}
+.cat-head{font-family:'Oswald';font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--pink);border-radius:10px;padding:11px 14px;margin:16px 0 10px}
+.cat-tot{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px}
+.cat-tot .th{font-family:'Oswald';font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--pink);margin-bottom:8px}
+.cat-tot .row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--line)}
+.cat-tot .row:last-child{border-bottom:none}
+.marks{display:flex;gap:6px;width:100%}
+.pwa{flex-basis:100%;width:100%;display:flex;gap:8px;margin-top:2px}
+.pwa .mk-wa{flex:1;justify-content:center;height:40px;font-size:13px}
+.mk{flex:1;min-width:0;height:44px;border-radius:9px;border:1.5px solid var(--line);background:var(--panel2);color:var(--muted);font-family:'Oswald';font-weight:700;font-size:15px;cursor:pointer;transition:.12s}
+.mk.ok.on{background:var(--ok);border-color:var(--ok);color:#04231a}
+.mk.f.on{background:var(--red);border-color:var(--red);color:#2a0509}
+.mk.j.on{background:var(--warn);border-color:var(--warn);color:#2a1f04}
+.mk.l.on{background:var(--blue);border-color:var(--blue);color:#04202a}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.sc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 6px;text-align:center}
+.sc .v{font-family:'Oswald';font-size:22px;font-weight:700}
+.sc .l{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.savebar{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--bg) 30%);padding:16px;z-index:40}
+.savebar .inner{max-width:640px;margin:0 auto}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 20px;font-size:14px;z-index:60;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.loader{text-align:center;color:var(--muted);padding:30px;font-size:14px}
+.mk-mot{flex:1;min-width:0;border:1px solid var(--warn);background:rgba(255,176,32,.12);color:var(--warn);border-radius:9px;height:44px;font-size:16px;cursor:pointer}
+.mk-wa{display:inline-flex;align-items:center;gap:4px;border:1px solid #25D366;background:rgba(37,211,102,.12);color:#25D366;border-radius:9px;padding:0 10px;height:38px;font-size:12px;font-weight:600;text-decoration:none;margin-left:2px;white-space:nowrap}
+.mk-obs{flex:1;min-width:0;border:1px solid #a97bff;background:rgba(169,123,255,.14);color:#c4a5ff;border-radius:9px;height:44px;font-family:'Oswald';font-weight:700;font-size:15px;cursor:pointer}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:70;padding:18px}
+.modal-bg.hidden{display:none}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:440px;width:100%;padding:20px}
+.modal-h{font-family:'Oswald';font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:.04em;color:var(--warn)}
+.modal-name{font-size:15px;font-weight:600;margin:2px 0 14px}
+.modal-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 5px}
+.modal-form{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.4;min-height:20px}
+.modal-ta{width:100%;box-sizing:border-box;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;resize:vertical;min-height:70px}
+.modal-sel{width:100%;box-sizing:border-box;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:14px;color:var(--ink);font-family:inherit}
+.modal-note{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4}
+.modal-actions{display:flex;gap:10px;margin-top:16px}
+.modal-actions .btn{width:auto;flex:1;padding:12px}
+</style>
+</head>
+<body>
+
+<a class="backhome" href="/">&#8592; Inicio</a>
+
+<!-- LOGIN -->
+<div id="login" class="wrap">
+  <div style="height:40px"></div>
+  <h1>Registrar <em>Asistencia</em></h1>
+  <p class="sub">Acción Fútbol · Portal del Entrenador</p>
+  <div class="card">
+    <div class="field">
+      <label>Correo</label>
+      <input type="email" id="email" placeholder="asistenciacontacto...@gmail.com" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="pass" placeholder="********" autocomplete="current-password">
+    </div>
+    <button class="btn" id="btn-login">Ingresar</button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="wrap hidden">
+  <div class="logout" id="btn-logout">Salir</div>
+  <h1>Registrar <em>Asistencia</em></h1>
+  <p class="sub">Elige sede, categoría y fecha, luego marca la lista.</p>
+
+  <div class="card">
+    <div class="field">
+      <label>Sede y categoría</label>
+      <select id="sedecat"><option value="">Cargando...</option></select>
+    </div>
+    <div class="field">
+      <label>Fecha del entrenamiento</label>
+      <input type="date" id="fecha">
+    </div>
+    <button class="btn" id="btn-cargar">Cargar lista</button>
+    <div class="err" id="app-err"></div>
+  </div>
+
+  <div id="roster-wrap" class="hidden">
+    <button class="btn btn-ghost" id="btn-repoent" style="margin-bottom:12px">📋 Reporte del Entrenamiento</button>
+    <button class="btn btn-ghost" id="btn-noinscrito" style="margin-bottom:12px">➕ Jugadores No Inscritos</button>
+    <div class="field hidden" id="cat-filter-wrap">
+      <label>Filtrar por categoría</label>
+      <select id="cat-filter"><option value="">Todas las categorías</option></select>
+    </div>
+    <div class="summary" id="summary"></div>
+    <div id="cat-totales"></div>
+    <div id="roster"></div>
+  </div>
+</div>
+
+<div class="savebar hidden" id="savebar"><div class="inner">
+  <button class="btn" id="btn-guardar">Guardar asistencia</button>
+</div></div>
+
+<!-- MODAL MOTIVO -->
+<div class="modal-bg hidden" id="mot-modal">
+  <div class="modal">
+    <div class="modal-h">Motivo de la justificación</div>
+    <div class="modal-name" id="mot-nombre"></div>
+    <div class="modal-lbl">Justificación del Jugador</div>
+    <div class="modal-form" id="mot-form">—</div>
+    <div class="modal-lbl">Motivo informado al entrenador (privado)</div>
+    <select id="mot-sel" class="modal-sel">
+      <option value="">— Selecciona el motivo —</option>
+      <option>ESTOY ENFERMO (RESFRÍO, GRIPE, FIEBRE, DOLOR ESTOMACAL ETC)</option>
+      <option>ESTOY LESIONADO O TENGO UNA MOLESTIA FÍSICA</option>
+      <option>TENGO QUE ESTUDIAR</option>
+      <option>PROBLEMAS POR TENER OTRA ACTIVIDAD ESPECÍFICA</option>
+      <option>PROBLEMAS FAMILIARES</option>
+      <option>PROBLEMAS DE TRANSPORTE (NO TENGO QUIEN ME LLEVE)</option>
+      <option>PROBLEMAS POR LA LLUVIA</option>
+      <option>VACACIONES</option>
+    </select>
+    <div class="modal-note">Usa este campo cuando el jugador no llenó el formulario pero te informó el motivo en privado. Queda registrado en la planilla de justificaciones (columna "Informado por el entrenador").</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="mot-cerrar">Cerrar</button>
+      <button class="btn" id="mot-guardar">Guardar motivo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL OBSERVACIÓN -->
+<div class="modal-bg hidden" id="obs-modal">
+  <div class="modal">
+    <div class="modal-h">Observación del entrenador</div>
+    <div class="modal-name" id="obs-nombre"></div>
+    <div class="modal-lbl">Observación</div>
+    <select id="obs-sel" class="modal-sel">
+      <option value="">— Selecciona —</option>
+      <option>DESACTIVAR AL JUGADOR</option>
+      <option>CAMBIO DE SEDE</option>
+      <option>CAMBIO DE CATEGORIA</option>
+      <option>CAMBIO DE NIVEL</option>
+      <option>NUNCA ASISTIO A LOS ENTRENAMIENTOS</option>
+      <option>LESIONADO</option>
+    </select>
+    <div id="obs-cat-wrap" class="hidden">
+      <div class="modal-lbl">Cambiar a la categoría</div>
+      <select id="obs-cat" class="modal-sel">
+        <option value="">— Selecciona —</option>
+        <option>SUB18</option>
+        <option>SUB16</option>
+        <option>SUB14</option>
+      </select>
+    </div>
+    <div id="obs-lesion-wrap" class="hidden">
+      <div class="modal-lbl">Motivo de la lesión</div>
+      <textarea id="obs-lesion" class="modal-ta" placeholder="Describe la lesión del jugador (zona, cómo pasó, etc.)"></textarea>
+    </div>
+    <div class="modal-lbl">Entrenador que informa</div>
+    <select id="obs-ent" class="modal-sel">
+      <option value="">— Selecciona —</option>
+      <option>GONZALO OPAZO</option>
+      <option>AGUSTIN SQUELLA</option>
+      <option>SEBASTIAN MESSEN</option>
+      <option>NICOLAS ARANCIBIA</option>
+      <option>BRIANT FIGUEROA</option>
+      <option>VICENTE ACEVEDO</option>
+      <option>MARCELO NEGRETTI</option>
+      <option>CHRISTIAN LABRA</option>
+      <option>SEBASTIAN MARDONES</option>
+      <option>ALEXIS ARANCIBIA</option>
+      <option>LUIS VARGAS</option>
+      <option>CAMILO BOSS</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="obs-cerrar">Cerrar</button>
+      <button class="btn" id="obs-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL JUGADORES NO INSCRITOS -->
+<div class="modal-bg hidden" id="ni-modal">
+  <div class="modal">
+    <div class="modal-h">Jugadores No Inscritos</div>
+    <div class="modal-name" style="color:var(--muted);font-weight:400;font-size:13px">Registra un jugador que aún no está inscrito.</div>
+    <div class="modal-lbl">Nombre y apellido</div>
+    <input type="text" id="ni-nombre" class="modal-sel" placeholder="Ej: Juan Pérez">
+    <div style="display:flex;gap:10px">
+      <div style="flex:1"><div class="modal-lbl">Año</div><input type="number" id="ni-ano" class="modal-sel" placeholder="Ej: 2013"></div>
+      <div style="flex:1"><div class="modal-lbl">Categoría</div><select id="ni-cat" class="modal-sel"><option value="">—</option></select></div>
+    </div>
+    <div class="modal-lbl">Sede</div>
+    <select id="ni-sede" class="modal-sel"><option value="">—</option></select>
+    <div class="modal-lbl">Teléfono apoderado</div>
+    <input type="tel" id="ni-tel" class="modal-sel" placeholder="Ej: 9 1234 5678">
+    <div class="modal-lbl">Entrenador</div>
+    <select id="ni-ent" class="modal-sel af-coaches"><option value="">— Selecciona —</option></select>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="ni-cerrar">Cerrar</button>
+      <button class="btn" id="ni-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REPORTE DEL ENTRENAMIENTO -->
+<div class="modal-bg hidden" id="repo-modal">
+  <div class="modal">
+    <div class="modal-h">Reporte del Entrenamiento</div>
+    <div style="display:flex;gap:10px">
+      <div style="flex:1"><div class="modal-lbl">Sede</div><div class="modal-form" id="repo-sede">—</div></div>
+      <div style="flex:1"><div class="modal-lbl">Categoría</div><div class="modal-form" id="repo-cat">—</div></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div style="flex:1"><div class="modal-lbl">Fecha</div><div class="modal-form" id="repo-fecha">—</div></div>
+      <div style="flex:1"><div class="modal-lbl">Total jugadores</div><div class="modal-form" id="repo-total" style="font-weight:800;text-align:center">0</div></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><div class="modal-lbl">Asistieron</div><div class="modal-form" id="repo-asist" style="color:var(--ok);font-weight:800;text-align:center">0</div></div>
+      <div style="flex:1"><div class="modal-lbl">Faltaron</div><div class="modal-form" id="repo-falt" style="color:var(--red);font-weight:800;text-align:center">0</div></div>
+      <div style="flex:1"><div class="modal-lbl">Justificaron</div><div class="modal-form" id="repo-just" style="color:var(--warn);font-weight:800;text-align:center">0</div></div>
+      <div style="flex:1"><div class="modal-lbl">Lesionados</div><div class="modal-form" id="repo-lesi" style="color:var(--blue);font-weight:800;text-align:center">0</div></div>
+    </div>
+    <div class="modal-lbl">Horario</div>
+    <select id="repo-horario" class="modal-sel">
+      <option value="">— Selecciona —</option>
+      <option>17:00 a 18:30 horas</option>
+      <option>18:30 a 20:00 horas</option>
+      <option>19:00 a 20:30 horas</option>
+      <option>17:30 a 19:00 horas</option>
+    </select>
+    <div class="modal-lbl">Cantidad de balones</div>
+    <input type="number" id="repo-balones" class="modal-sel" min="0" placeholder="Ej: 12">
+    <div class="modal-lbl">Observación del entrenamiento</div>
+    <textarea id="repo-obs" class="modal-ta" placeholder="Escribe cómo estuvo el entrenamiento..."></textarea>
+    <div class="modal-lbl">Encargado de reporte</div>
+    <select id="repo-ent" class="modal-sel af-coaches">
+      <option value="">— Selecciona —</option>
+    </select>
+    <div class="modal-lbl">Entrenadores en cancha</div>
+    <select id="repo-cancha1" class="modal-sel af-coaches">
+      <option value="">— Selecciona —</option>
+    </select>
+    <select id="repo-cancha2" class="modal-sel af-coaches" style="margin-top:8px">
+      <option value="">— Selecciona —</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="repo-cerrar">Cerrar</button>
+      <button class="btn" id="repo-guardar">Guardar</button>
+    </div>
+    <div class="modal-actions" style="margin-top:8px">
+      <button class="btn btn-ghost" id="repo-copiar" style="flex:1">📋 Copiar</button>
+      <button class="btn" id="repo-wa" style="flex:1">📲 WhatsApp</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_ASIS = 'https://script.google.com/macros/s/AKfycbwa53UNt6Q1MmxCt9g8EGB63Hu_r-UqzUQ1Uh51YWfe5ZuZCFTSVenPFLUGOVnghbIt/exec';
+const firebaseConfig = {
+  apiKey: "AIzaSyDZZsCyfgVTBOswlFPrbdf_pr7uzmQgnTs",
+  authDomain: "asistencia-accion-futbol.firebaseapp.com",
+  projectId: "asistencia-accion-futbol",
+  storageBucket: "asistencia-accion-futbol.firebasestorage.app",
+  messagingSenderId: "1007230869241",
+  appId: "1:1007230869241:web:d11ce0c37a820325cecc28"
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+
+const $ = id => document.getElementById(id);
+let ROSTER = [];
+let CONFIG_SEDES = [];
+const MARCAS = ['OK','F','J','L'];
+
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+function showErr(id,msg){ const e=$(id); e.textContent=msg; e.style.display='block'; }
+function hideErr(id){ $(id).style.display='none'; }
+
+async function token(){ const u=fbAuth.currentUser; if(!u) throw new Error('Sesion no iniciada'); return await u.getIdToken(); }
+
+$('btn-login').onclick = async ()=>{
+  hideErr('login-err');
+  const email=$('email').value.trim(), pass=$('pass').value;
+  if(!email||!pass){ showErr('login-err','Ingresa correo y contrasena.'); return; }
+  $('btn-login').disabled=true;
+  try{ await fbAuth.signInWithEmailAndPassword(email,pass); }
+  catch(e){
+    var msg;
+    switch(e.code){
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential': msg='Contrasena incorrecta.'; break;
+      case 'auth/user-not-found': msg='Esa cuenta no existe en Firebase.'; break;
+      case 'auth/invalid-email': msg='El correo no es valido.'; break;
+      case 'auth/unauthorized-domain': msg='Dominio no autorizado en Firebase.'; break;
+      case 'auth/too-many-requests': msg='Demasiados intentos. Espera unos minutos.'; break;
+      default: msg=(e.code||'Error')+' - '+(e.message||'');
+    }
+    showErr('login-err',msg);
+  }
+  $('btn-login').disabled=false;
+};
+$('btn-logout').onclick = ()=>fbAuth.signOut();
+
+fbAuth.onAuthStateChanged(async user=>{
+  if(user){
+    $('login').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    $('fecha').value = todayStr();
+    await cargarConfig();
+  } else {
+    $('app').classList.add('hidden');
+    $('savebar').classList.add('hidden');
+    $('login').classList.remove('hidden');
+  }
+});
+
+async function cargarConfig(){
+  try{
+    const t=await token();
+    const res=await fetch(API_ASIS+'?action=config&idToken='+encodeURIComponent(t),{cache:'no-store'});
+    const data=await res.json();
+    if(data.error){ showErr('app-err',data.error); return; }
+    CONFIG_SEDES=data.sedes||[];
+    const sel=$('sedecat');
+    const bySede={};
+    (data.sedes||[]).forEach(x=>{ (bySede[x.sede]=bySede[x.sede]||[]).push(x.categoria); });
+    let html='<option value="">Selecciona...</option>';
+    Object.keys(bySede).forEach(sede=>{
+      html+='<optgroup label="'+sede+'">';
+      bySede[sede].forEach(cat=>{ html+='<option value="'+sede+'||'+cat+'">'+sede+' - '+cat+'</option>'; });
+      html+='</optgroup>';
+    });
+    html+='<optgroup label="SENIOR"><option value="SENIOR||AM">SENIOR - AM</option><option value="SENIOR||PM">SENIOR - PM</option></optgroup>';
+    sel.innerHTML=html;
+  }catch(e){ showErr('app-err','No se pudo cargar la configuracion.'); }
+}
+function esSenior(){ return ($('sedecat').value||'').indexOf('SENIOR||')===0; }
+function setSeniorUI(on){
+  ['btn-repoent','btn-noinscrito','cat-filter-wrap','summary','cat-totales'].forEach(id=>{
+    const el=$(id); if(el) el.style.display = on ? 'none' : '';
+  });
+}
+
+$('btn-cargar').onclick = async ()=>{
+  hideErr('app-err');
+  const val=$('sedecat').value, fecha=$('fecha').value||todayStr();
+  if(!val){ showErr('app-err','Elige sede y categoria.'); return; }
+  if(esSenior()){ await cargarSenior(val.split('||')[1], fecha); return; }
+  setSeniorUI(false);
+  const parts=val.split('||'), sede=parts[0], cat=parts[1];
+  $('btn-cargar').disabled=true; $('roster').innerHTML='<div class="loader">Cargando lista...</div>'; $('roster-wrap').classList.remove('hidden');
+  try{
+    const t=await token();
+    const q='?action=roster&sede='+encodeURIComponent(sede)+'&cat='+encodeURIComponent(cat)+'&fecha='+encodeURIComponent(fecha)+'&idToken='+encodeURIComponent(t);
+    const res=await fetch(API_ASIS+q,{cache:'no-store'});
+    const data=await res.json();
+    if(data.error){ showErr('app-err',data.error); $('roster').innerHTML=''; $('savebar').classList.add('hidden'); $('btn-cargar').disabled=false; return; }
+    ROSTER=data.jugadores||[];
+    buildCatFilter();
+    renderRoster();
+    $('savebar').classList.remove('hidden');
+  }catch(e){ showErr('app-err','No se pudo cargar la lista.'); $('roster').innerHTML=''; }
+  $('btn-cargar').disabled=false;
+};
+
+/* ── SENIOR (AM/PM) integrado ── */
+async function cargarSenior(turno,fecha){
+  setSeniorUI(true);
+  $('roster-wrap').classList.remove('hidden');
+  $('roster').innerHTML='<div class="loader">Cargando lista...</div>';
+  $('btn-cargar').disabled=true;
+  try{
+    const t=await token();
+    const q='?action=srroster&turno='+encodeURIComponent(turno)+'&fecha='+encodeURIComponent(fecha)+'&idToken='+encodeURIComponent(t);
+    const res=await fetch(API_ASIS+q,{cache:'no-store'});
+    const data=await res.json();
+    if(data.error){ showErr('app-err',data.error); $('roster').innerHTML=''; $('savebar').classList.add('hidden'); $('btn-cargar').disabled=false; return; }
+    ROSTER=data.jugadores||[];
+    renderSenior();
+    $('savebar').classList.remove('hidden');
+  }catch(e){ showErr('app-err','No se pudo cargar la lista.'); $('roster').innerHTML=''; }
+  $('btn-cargar').disabled=false;
+}
+function renderSenior(){
+  const ok=ROSTER.filter(p=>p.marca==='OK').length, f=ROSTER.filter(p=>p.marca==='F').length;
+  let html='<div class="cat-tot"><div class="th">Asistencia Senior</div>'+
+    '<div class="row"><span>Asistieron</span><b style="color:var(--ok)">'+ok+'</b></div>'+
+    '<div class="row"><span>Faltaron</span><b style="color:var(--red)">'+f+'</b></div>'+
+    '<div class="row"><span>Total</span><b>'+ROSTER.length+'</b></div></div>';
+  ROSTER.forEach((p,i)=>{
+    html+='<div class="player"><div class="pname"><div class="pn">'+esc(p.nombre)+estBadge(p.estado)+'</div></div><div class="marks">'+
+      '<button class="mk ok'+(p.marca==='OK'?' on':'')+'" data-i="'+i+'" data-m="OK">OK</button>'+
+      '<button class="mk f'+(p.marca==='F'?' on':'')+'" data-i="'+i+'" data-m="F">F</button>'+
+    '</div>';
+    if(p.marca==='F'){
+      const tel=waNum(p.tel);
+      if(tel){
+        const msg=encodeURIComponent('Hola, '+p.nombre+', crack, hoy nos dimos cuenta de que no pudiste asistir al entrenamiento y queríamos escribirte personalmente. No queremos que pierdas el ritmo ni que te desconectes del equipo. Cuéntanos, crack. ¿Qué pasó hoy? ¿Por qué no pudiste asistir entrenamiento?');
+        html+='<div class="pwa"><a class="mk-wa" href="https://wa.me/'+tel+'?text='+msg+'" target="_blank" rel="noopener" title="WhatsApp al jugador">📱 Enviar WhatsApp</a></div>';
+      } else {
+        html+='<div class="pwa"><span style="font-size:11px;color:var(--muted2)">Sin teléfono en la planilla</span></div>';
+      }
+    }
+    html+='</div>';
+  });
+  $('roster').innerHTML=html;
+  $('roster').querySelectorAll('.mk').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i, m=b.dataset.m;
+    ROSTER[i].marca=(ROSTER[i].marca===m)?'':m;
+    renderSenior();
+  });
+}
+
+let CAT_FILTER='';
+function buildCatFilter(){
+  const cats=[]; const seen={};
+  ROSTER.forEach(p=>{ const c=(p.categoria||'').trim(); if(c&&!seen[c]){ seen[c]=1; cats.push(c); } });
+  const wrap=$('cat-filter-wrap'), sel=$('cat-filter');
+  if(cats.length>1){
+    sel.innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');
+    CAT_FILTER=''; sel.value='';
+    sel.onchange=()=>{ CAT_FILTER=sel.value; renderRoster(); };
+    wrap.classList.remove('hidden');
+  } else {
+    CAT_FILTER=''; wrap.classList.add('hidden');
+  }
+}
+function estBadge(e){
+  e=String(e==null?'':e).trim(); if(!e) e='SIN ESTADO';
+  const u=e.toUpperCase(); let c='#5c5c66';
+  if(u.indexOf('DESACTIV')>=0) c='#ff4d5e';
+  else if(u.indexOf('ACTIV')>=0) c='#27c281';
+  else if(u==='NEW') c='#64c8ff';
+  else if(u==='FULL') c='#ff2e93';
+  else if(u.indexOf('LESION')>=0) c='#64c8ff';
+  else if(u.indexOf('RECESO')>=0) c='#ffb020';
+  else if(u.indexOf('CIERRE')>=0) c='#9a9aa3';
+  return '<span class="est-badge" style="color:'+c+';border-color:'+c+'">'+esc(e)+'</span>';
+}
+function playerHTML(p,i){
+  const marca=(p.marca||'').toUpperCase();
+  let html='<div class="player"><div class="pname"><div class="pn">'+esc(p.nombre)+estBadge(p.estado)+'</div>'+(p.rut?'<div class="prut">'+esc(p.rut)+'</div>':'')+'</div><div class="marks">';
+  MARCAS.forEach(m=>{ html+='<button class="mk '+m.toLowerCase()+(marca===m?' on':'')+'" data-i="'+i+'" data-m="'+m+'">'+m+'</button>'; });
+  if(marca==='J') html+='<button class="mk-mot" data-i="'+i+'" title="Ver / escribir motivo">'+(p.opcion?'💬✓':'💬')+'</button>';
+  html+='<button class="mk-obs" data-i="'+i+'" title="Observación del entrenador">OBS</button>';
+  html+='</div>';
+  if(marca==='F'){
+    const msg=encodeURIComponent('Hola. Como estas? Quisiéramos saber por qué '+p.nombre+' no pudiste asistir al entrenamiento hoy. Favor recuerda realizar el formulario de inasistencia https://bit.ly/justificacioninasistenciaaf');
+    const tj=waNum(p.telJug), ta=waNum(p.telApo);
+    let wa='';
+    if(tj) wa+='<a class="mk-wa" href="https://wa.me/'+tj+'?text='+msg+'" target="_blank" rel="noopener" title="WhatsApp al jugador">📱 Jugador</a>';
+    if(ta) wa+='<a class="mk-wa" href="https://wa.me/'+ta+'?text='+msg+'" target="_blank" rel="noopener" title="WhatsApp al apoderado">📱 Apoderado</a>';
+    if(wa) html+='<div class="pwa">'+wa+'</div>';
+  }
+  html+='</div>';
+  return html;
+}
+function renderRoster(){
+  const sc=($('sedecat').value||'').split('||'); const enc=[sc[0]||'', sc[1]||''].filter(Boolean).join(' ');
+  const groups={}, order=[];
+  ROSTER.forEach((p,i)=>{
+    if(CAT_FILTER && (p.categoria||'')!==CAT_FILTER) return;
+    const g=(p.categoria||'').trim() || '__none__';
+    if(!groups[g]){ groups[g]=[]; order.push(g); }
+    groups[g].push(i);
+  });
+  let html='';
+  order.forEach(g=>{
+    if(g!=='__none__') html+='<div class="cat-head">'+esc((enc?enc+' - ':'')+g)+'</div>';
+    groups[g].forEach(i=>{ html+=playerHTML(ROSTER[i], i); });
+  });
+  $('roster').innerHTML=html;
+  const btns=$('roster').querySelectorAll('.mk');
+  btns.forEach(b=>{
+    b.onclick=()=>{ const i=+b.dataset.i, m=b.dataset.m; ROSTER[i].marca=(ROSTER[i].marca===m?'':m); renderRoster(); if(m==='J' && ROSTER[i].marca==='J') abrirMotivo(i); };
+  });
+  $('roster').querySelectorAll('.mk-mot').forEach(b=>{
+    b.onclick=()=>abrirMotivo(+b.dataset.i);
+  });
+  $('roster').querySelectorAll('.mk-obs').forEach(b=>{
+    b.onclick=()=>abrirObs(+b.dataset.i);
+  });
+  updateSummary();
+}
+
+let MOT_I=null;
+async function abrirMotivo(i){
+  const p=ROSTER[i];
+  const val=$('sedecat').value; if(!val){ toast('Elige sede y categoria'); return; }
+  const parts=val.split('||'), sede=parts[0], cat=parts[1];
+  const fecha=$('fecha').value||todayStr();
+  MOT_I=i;
+  $('mot-nombre').textContent=p.nombre;
+  $('mot-form').textContent='Cargando...';
+  $('mot-sel').value = (p.opcion!==undefined) ? p.opcion : '';
+  $('mot-modal').classList.remove('hidden');
+  try{
+    const t=await token();
+    const q='?action=motivo&sede='+encodeURIComponent(sede)+'&cat='+encodeURIComponent(cat)+'&fecha='+encodeURIComponent(fecha)+'&rut='+encodeURIComponent(p.rut||'')+'&idToken='+encodeURIComponent(t);
+    const res=await fetch(API_ASIS+q);
+    const data=await res.json();
+    if(data.error){ $('mot-form').textContent='(no se pudo cargar: '+data.error+')'; return; }
+    $('mot-form').textContent = data.formulario ? data.formulario : '— Sin justificación del jugador —';
+    if(p.opcion===undefined && data.entrenador) $('mot-sel').value=data.entrenador;
+  }catch(e){ $('mot-form').textContent='(error de conexión)'; }
+}
+async function guardarMotivo(){
+  if(MOT_I==null) return;
+  const p=ROSTER[MOT_I];
+  const opcion=$('mot-sel').value;
+  if(!opcion){ toast('Selecciona un motivo'); return; }
+  const val=$('sedecat').value, fecha=$('fecha').value||todayStr();
+  const parts=val.split('||'), sede=parts[0], cat=parts[1];
+  p.marca='J'; p.opcion=opcion;
+  $('mot-guardar').disabled=true; $('mot-guardar').textContent='Guardando...';
+  try{
+    const t=await token();
+    const res=await fetch(API_ASIS,{method:'POST',body:JSON.stringify({action:'motivoent',idToken:t,sede:sede,cat:cat,fecha:fecha,rut:p.rut,row:p.row,opcion:opcion})});
+    const data=await res.json();
+    if(data.error){ toast('Error: '+data.error); }
+    else{ toast('Motivo guardado'); }
+  }catch(e){ toast('No se pudo guardar el motivo.'); }
+  $('mot-guardar').disabled=false; $('mot-guardar').textContent='Guardar motivo';
+  $('mot-modal').classList.add('hidden'); MOT_I=null; renderRoster();
+}
+$('mot-guardar').onclick=guardarMotivo;
+$('mot-cerrar').onclick=()=>{ $('mot-modal').classList.add('hidden'); MOT_I=null; };
+
+/* ── Observación del entrenador ── */
+let OBS_I=null;
+function abrirObs(i){
+  OBS_I=i; const p=ROSTER[i];
+  $('obs-nombre').textContent=p.nombre;
+  $('obs-sel').value=''; $('obs-ent').value='';
+  $('obs-cat').value=''; $('obs-cat-wrap').classList.add('hidden');
+  $('obs-lesion').value=''; $('obs-lesion-wrap').classList.add('hidden');
+  $('obs-modal').classList.remove('hidden');
+}
+$('obs-sel').onchange=()=>{
+  const v=$('obs-sel').value;
+  const esCambio=v==='CAMBIO DE CATEGORIA';
+  const esLesion=v==='LESIONADO';
+  $('obs-cat-wrap').classList.toggle('hidden', !esCambio);
+  $('obs-lesion-wrap').classList.toggle('hidden', !esLesion);
+  if(!esCambio) $('obs-cat').value='';
+  if(!esLesion) $('obs-lesion').value='';
+};
+async function guardarObs(){
+  if(OBS_I==null) return;
+  const p=ROSTER[OBS_I];
+  let obs=$('obs-sel').value; const ent=$('obs-ent').value;
+  if(!obs){ toast('Selecciona una observación'); return; }
+  if(obs==='CAMBIO DE CATEGORIA'){
+    if(!$('obs-cat').value){ toast('Selecciona la categoría destino'); return; }
+    obs='CAMBIO DE CATEGORIA A '+$('obs-cat').value;
+  }
+  if(obs==='LESIONADO'){
+    if(!$('obs-lesion').value.trim()){ toast('Escribe el motivo de la lesión'); return; }
+    obs='LESIONADO - '+$('obs-lesion').value.trim();
+  }
+  if(!ent){ toast('Selecciona el entrenador'); return; }
+  const val=$('sedecat').value, parts=val.split('||'), sede=parts[0]||'', cat=parts[1]||'';
+  $('obs-guardar').disabled=true; $('obs-guardar').textContent='Guardando...';
+  try{
+    const t=await token();
+    const res=await fetch(API_ASIS,{method:'POST',body:JSON.stringify({action:'observacion',idToken:t,rut:p.rut,nombre:p.nombre,sede:sede,cat:cat,obs:obs,entrenador:ent})});
+    const data=await res.json();
+    if(data.error){ toast('Error: '+data.error); } else { toast('Observación guardada'); }
+  }catch(e){ toast('No se pudo guardar.'); }
+  $('obs-guardar').disabled=false; $('obs-guardar').textContent='Guardar';
+  $('obs-modal').classList.add('hidden'); OBS_I=null;
+}
+$('obs-guardar').onclick=guardarObs;
+$('obs-cerrar').onclick=()=>{ $('obs-modal').classList.add('hidden'); OBS_I=null; };
+
+/* ── Reporte del Entrenamiento ── */
+const AF_COACHES=['JOSÉ ALMUNA','ESTEBAN TORRES','GONZALO OPAZO','AGUSTIN SQUELLA','SEBASTIAN MESSEN','NICOLAS ARANCIBIA','BRIANT FIGUEROA','VICENTE ACEVEDO','MARCELO NEGRETTI','CHRISTIAN LABRA','SEBASTIAN MARDONES','ALEXIS ARANCIBIA','CAMILO BOSS','LUIS VARGAS'];
+document.querySelectorAll('.af-coaches').forEach(sel=>{
+  sel.insertAdjacentHTML('beforeend', AF_COACHES.map(n=>'<option>'+n+'</option>').join(''));
+});
+
+/* ── Jugadores No Inscritos ── */
+function abrirNoInscrito(){
+  const sedes=[...new Set(CONFIG_SEDES.map(x=>x.sede).filter(Boolean))];
+  const cats=[...new Set(CONFIG_SEDES.map(x=>x.categoria).filter(Boolean))];
+  const sc=($('sedecat').value||'').split('||');
+  $('ni-sede').innerHTML='<option value="">—</option>'+sedes.map(s=>'<option'+(s===sc[0]?' selected':'')+'>'+s+'</option>').join('');
+  $('ni-cat').innerHTML='<option value="">—</option>'+cats.map(c=>'<option'+(c===sc[1]?' selected':'')+'>'+c+'</option>').join('');
+  $('ni-nombre').value=''; $('ni-ano').value=''; $('ni-tel').value=''; $('ni-ent').value='';
+  $('ni-modal').classList.remove('hidden');
+}
+$('btn-noinscrito').onclick=abrirNoInscrito;
+$('ni-cerrar').onclick=()=>$('ni-modal').classList.add('hidden');
+$('ni-modal').addEventListener('click',e=>{ if(e.target===$('ni-modal')) $('ni-modal').classList.add('hidden'); });
+$('ni-guardar').onclick=async ()=>{
+  const nombre=$('ni-nombre').value.trim();
+  if(!nombre){ toast('Escribe el nombre'); return; }
+  if(!$('ni-sede').value||!$('ni-cat').value){ toast('Elige sede y categoría'); return; }
+  if(!$('ni-ent').value){ toast('Selecciona el entrenador'); return; }
+  const body={action:'noinscrito', nombre:nombre, ano:$('ni-ano').value.trim(), categoria:$('ni-cat').value,
+    sede:$('ni-sede').value, telApo:$('ni-tel').value.trim(), entrenador:$('ni-ent').value};
+  $('ni-guardar').disabled=true; $('ni-guardar').textContent='Guardando...';
+  try{
+    body.idToken=await token();
+    const res=await fetch(API_ASIS,{method:'POST',body:JSON.stringify(body)});
+    const data=await res.json();
+    if(data.error) toast('Error: '+data.error); else { toast('Jugador registrado'); $('ni-modal').classList.add('hidden'); }
+  }catch(e){ toast('No se pudo guardar.'); }
+  $('ni-guardar').disabled=false; $('ni-guardar').textContent='Guardar';
+};
+
+function repoConteo(){
+  const c={OK:0,F:0,J:0,L:0};
+  ROSTER.forEach(p=>{ const m=(p.marca||'').toUpperCase(); if(m in c) c[m]++; });
+  return { asist:c.OK, noAsist:c.F+c.J+c.L, F:c.F, J:c.J, L:c.L, total:ROSTER.length };
+}
+function abrirRepo(){
+  const val=$('sedecat').value;
+  if(!val){ toast('Elige sede y categoría'); return; }
+  const parts=val.split('||');
+  $('repo-sede').textContent=parts[0]||'—';
+  $('repo-cat').textContent=parts[1]||'—';
+  $('repo-fecha').textContent=$('fecha').value||todayStr();
+  const k=repoConteo();
+  $('repo-total').textContent=k.total;
+  $('repo-asist').textContent=k.asist;
+  $('repo-falt').textContent=k.F;
+  $('repo-just').textContent=k.J;
+  $('repo-lesi').textContent=k.L;
+  $('repo-modal').classList.remove('hidden');
+}
+function repoTexto(){
+  const k=repoConteo();
+  return '📋 REPORTE DE ENTRENAMIENTO — Acción Fútbol\n'+
+    'Sede: '+$('repo-sede').textContent+'\n'+
+    'Categoría: '+$('repo-cat').textContent+'\n'+
+    'Fecha: '+$('repo-fecha').textContent+'\n'+
+    'Total jugadores: '+k.total+'\n'+
+    'Asistieron: '+k.asist+'\n'+
+    'Faltaron: '+k.F+'\n'+
+    'Justificaron: '+k.J+'\n'+
+    'Lesionados: '+k.L+'\n'+
+    'Horario: '+($('repo-horario').value||'—')+'\n'+
+    'Balones: '+($('repo-balones').value||'—')+'\n'+
+    'Observación: '+($('repo-obs').value||'—')+'\n'+
+    'Encargado de reporte: '+($('repo-ent').value||'—')+'\n'+
+    'Entrenadores en cancha: '+([$('repo-cancha1').value,$('repo-cancha2').value].filter(Boolean).join(', ')||'—');
+}
+$('btn-repoent').onclick=abrirRepo;
+$('repo-cerrar').onclick=()=>$('repo-modal').classList.add('hidden');
+$('repo-guardar').onclick=async ()=>{
+  const parts=($('sedecat').value||'').split('||');
+  if(!$('repo-ent').value){ toast('Selecciona el entrenador'); return; }
+  const k=repoConteo();
+  const body={action:'repoent', sede:parts[0]||'', cat:parts[1]||'', fecha:$('repo-fecha').textContent,
+    horario:$('repo-horario').value, balones:$('repo-balones').value,
+    observacion:$('repo-obs').value, entrenador:$('repo-ent').value,
+    enCancha:[$('repo-cancha1').value,$('repo-cancha2').value].filter(Boolean).join(', '),
+    total:k.total, asistieron:k.asist, faltaron:k.F, justificaron:k.J, lesionados:k.L};
+  $('repo-guardar').disabled=true; $('repo-guardar').textContent='Guardando...';
+  try{
+    body.idToken=await token();
+    const res=await fetch(API_ASIS,{method:'POST',body:JSON.stringify(body)});
+    const data=await res.json();
+    if(data.error) toast('Error: '+data.error); else toast('Reporte guardado');
+  }catch(e){ toast('No se pudo guardar.'); }
+  $('repo-guardar').disabled=false; $('repo-guardar').textContent='Guardar';
+};
+$('repo-copiar').onclick=()=>{
+  const txt=repoTexto();
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(()=>toast('Copiado')).catch(()=>toast('No se pudo copiar')); }
+  else { toast('Copia manual desde el mensaje'); }
+};
+$('repo-wa').onclick=()=>{ window.open('https://wa.me/?text='+encodeURIComponent(repoTexto()),'_blank'); };
+function updateSummary(){
+  const c={OK:0,F:0,J:0,L:0};
+  const cats={}; let hayCat=false;
+  ROSTER.forEach(p=>{
+    const m=(p.marca||'').toUpperCase(); if(m in c) c[m]++;
+    const g=(p.categoria||'').trim();
+    if(g){ hayCat=true; if(!cats[g])cats[g]={ok:0,tot:0}; cats[g].tot++; if(m==='OK')cats[g].ok++; }
+  });
+  $('summary').innerHTML=
+    '<div class="sc"><div class="v" style="color:var(--ok)">'+c.OK+'</div><div class="l">Asistio</div></div>'+
+    '<div class="sc"><div class="v" style="color:var(--red)">'+c.F+'</div><div class="l">Falto</div></div>'+
+    '<div class="sc"><div class="v" style="color:var(--warn)">'+c.J+'</div><div class="l">Justif.</div></div>'+
+    '<div class="sc"><div class="v" style="color:var(--blue)">'+c.L+'</div><div class="l">Lesion.</div></div>';
+  if(hayCat){
+    let h='<div class="cat-tot"><div class="th">Asistencia por categoría</div>'+
+      '<div class="row"><b>Total asistieron</b><b style="color:var(--ok)">'+c.OK+' / '+ROSTER.length+'</b></div>';
+    Object.keys(cats).forEach(g=>{ h+='<div class="row"><span>'+esc(g)+'</span><span><b style="color:var(--ok)">'+cats[g].ok+'</b> / '+cats[g].tot+'</span></div>'; });
+    h+='</div>';
+    $('cat-totales').innerHTML=h;
+  } else { $('cat-totales').innerHTML=''; }
+}
+
+$('btn-guardar').onclick = async ()=>{
+  const val=$('sedecat').value, fecha=$('fecha').value||todayStr();
+  if(!val){ toast('Elige sede y categoria'); return; }
+  $('btn-guardar').disabled=true; $('btn-guardar').textContent='Guardando...';
+  try{
+    const t=await token();
+    let res;
+    if(esSenior()){
+      const turno=val.split('||')[1];
+      const marcas=ROSTER.map(p=>({row:p.row,marca:p.marca}));   // envía todos (OK/F/vacío)
+      res=await fetch(API_ASIS,{method:'POST',body:JSON.stringify({action:'srsave',idToken:t,turno:turno,fecha:fecha,marcas:marcas})});
+    } else {
+      const parts=val.split('||'), sede=parts[0], cat=parts[1];
+      const marcas=ROSTER.filter(p=>p.marca).map(p=>({row:p.row,marca:p.marca}));
+      if(!marcas.length){ toast('No hay marcas para guardar'); $('btn-guardar').disabled=false; $('btn-guardar').textContent='Guardar asistencia'; return; }
+      res=await fetch(API_ASIS,{method:'POST',body:JSON.stringify({action:'save',idToken:t,sede:sede,cat:cat,fecha:fecha,marcas:marcas})});
+    }
+    const data=await res.json();
+    if(data.error){ toast('Error: '+data.error); }
+    else{ toast('Guardado ('+data.escritos+' jugadores)'); }
+  }catch(e){ toast('No se pudo guardar. Revisa la conexion.'); }
+  $('btn-guardar').disabled=false; $('btn-guardar').textContent='Guardar asistencia';
+};
+
+function esc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function waNum(raw){
+  if(!raw) return '';
+  let s=String(raw).split('/')[0];      // si hay dos números separados por "/", toma el primero
+  s=s.replace(/\D/g,'');                 // solo dígitos
+  if(!s) return '';
+  if(s.indexOf('56')!==0) s='56'+s;      // asegura el código de país de Chile (+56)
+  return s;
+}
+</script>
+</body>
+</html>
