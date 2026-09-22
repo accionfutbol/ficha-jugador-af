@@ -1883,6 +1883,9 @@ function show(p){
   $('ficha').classList.add('show');
   $('ficha').scrollIntoView({behavior:'smooth',block:'start'});
   setTimeout(()=>{ renderChart(p); renderDonutAsis(p); }, 100);
+  if (p && p.rut) {
+    cargarEvaluacionesEntrenador(p.rut);
+  }
 }
 function fichaHTML(p){
   const chips=[p.sede,p.cat,p.pos,p.pie].filter(Boolean).map(x=>'<span class="fchip">'+esc(x)+'</span>').join('');
@@ -2854,6 +2857,91 @@ function renderPartidos(partidos, el){
     el.innerHTML=html;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// EVALUACIONES DEL ENTRENADOR
+// ═══════════════════════════════════════════════════════════════════
+
+async function cargarEvaluacionesEntrenador(rut) {
+  try {
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwa53UNt6Q1MmxCt9g8EGB63Hu_r-UqzUQ1Uh51YWfe5ZuZCFTSVenPFLUGOVnghbIt/exec";
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        accion: 'obtenerEvaluacionesEntrenador',
+        rut: rut
+      })
+    });
+    const data = await response.json();
+    if (!data || !data.primerSemestre) {
+      console.log('Sin evaluaciones del entrenador aún');
+      return;
+    }
+    if (data.primerSemestre.notaTecnica) {
+      renderEvaluacionSemestre(1, data.primerSemestre);
+    }
+    if (data.segundoSemestre.notaTecnica) {
+      renderEvaluacionSemestre(2, data.segundoSemestre);
+      mostrarProgresion(data.primerSemestre, data.segundoSemestre);
+    }
+  } catch (error) {
+    console.error('Error cargando evaluaciones:', error);
+  }
+}
+
+function renderEvaluacionSemestre(semestre, datos) {
+  const sem = semestre;
+  const tecnica = parseFloat(datos.notaTecnica) || 0;
+  const tecnicaEl = document.getElementById(`eval-${sem}-tecnica`);
+  const tecnicaBarEl = document.getElementById(`eval-${sem}-tecnica-bar`);
+  if (tecnicaEl) {
+    tecnicaEl.textContent = tecnica.toFixed(1);
+    if (tecnicaBarEl) tecnicaBarEl.style.width = `${(tecnica / 10) * 100}%`;
+  }
+  const actitud = parseFloat(datos.notaActitud) || 0;
+  const actitudEl = document.getElementById(`eval-${sem}-actitud`);
+  const actitudBarEl = document.getElementById(`eval-${sem}-actitud-bar`);
+  if (actitudEl) {
+    actitudEl.textContent = actitud.toFixed(1);
+    if (actitudBarEl) actitudBarEl.style.width = `${(actitud / 10) * 100}%`;
+  }
+  const promedio = parseFloat(datos.promedio) || 0;
+  const promedioEl = document.getElementById(`eval-${sem}-promedio`);
+  const promedioBarEl = document.getElementById(`eval-${sem}-promedio-bar`);
+  if (promedioEl) {
+    promedioEl.textContent = promedio.toFixed(2);
+    if (promedioBarEl) promedioBarEl.style.width = `${(promedio / 10) * 100}%`;
+  }
+  const obsEl = document.getElementById(`eval-${sem}-observacion`);
+  if (obsEl) {
+    obsEl.textContent = datos.observacion || "Sin comentarios";
+  }
+}
+
+function mostrarProgresion(sem1, sem2) {
+  const progDiv = document.getElementById('eval-progresion');
+  if (!progDiv) return;
+  progDiv.style.display = 'block';
+  const tecnica1 = parseFloat(sem1.notaTecnica) || 0;
+  const tecnica2 = parseFloat(sem2.notaTecnica) || 0;
+  const diferenciaTecnica = tecnica2 - tecnica1;
+  const actitud1 = parseFloat(sem1.notaActitud) || 0;
+  const actitud2 = parseFloat(sem2.notaActitud) || 0;
+  const diferenciaActitud = actitud2 - actitud1;
+  const tecnicaEl = document.getElementById('progresion-tecnica');
+  if (tecnicaEl) {
+    tecnicaEl.textContent = `${diferenciaTecnica >= 0 ? '+' : ''}${diferenciaTecnica.toFixed(1)}`;
+    tecnicaEl.className = diferenciaTecnica > 0 ? 'progresion-valor mejora' :
+                          diferenciaTecnica < 0 ? 'progresion-valor decline' :
+                          'progresion-valor';
+  }
+  const actitudEl = document.getElementById('progresion-actitud');
+  if (actitudEl) {
+    actitudEl.textContent = `${diferenciaActitud >= 0 ? '+' : ''}${diferenciaActitud.toFixed(1)}`;
+    actitudEl.className = diferenciaActitud > 0 ? 'progresion-valor mejora' :
+                          diferenciaActitud < 0 ? 'progresion-valor decline' :
+                          'progresion-valor';
+  }
+}
 
 /* load() ahora se llama SOLO tras iniciar sesión (ver onAuthStateChanged) */
 </script>
