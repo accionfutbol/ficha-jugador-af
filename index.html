@@ -1930,6 +1930,26 @@ function fichaHTML(p){
     '<div class="mmeses">'+mesesHTML+'</div>'+
     '<div class="chart-wrap" style="margin-top:14px"><canvas id="chart-asis"></canvas></div>'+
   '</div>'+
+  '<div class="fcard"><div class="fsect"><i></i>📝 Evaluación del Entrenador</div>'+
+  '<div class="section-evaluaciones-entrenador">'+
+    '<div class="semestre-card" data-semestre="1"><div class="semestre-title">1er Semestre 2026</div>'+
+    '<div class="evaluacion-grid">'+
+      '<div class="eval-metric"><div class="eval-label">Técnica Táctica</div><div class="eval-value" id="eval-1-tecnica">—</div><div class="eval-unit">/10</div><div class="eval-bar"><div class="eval-progress" id="eval-1-tecnica-bar"></div></div></div>'+
+      '<div class="eval-metric"><div class="eval-label">Actitud</div><div class="eval-value" id="eval-1-actitud">—</div><div class="eval-unit">/10</div><div class="eval-bar"><div class="eval-progress" id="eval-1-actitud-bar"></div></div></div>'+
+    '</div><div class="eval-separator"></div>'+
+    '<div class="eval-promedio"><div class="eval-label">Promedio Final</div><div class="eval-value-large" id="eval-1-promedio">—</div><div class="eval-bar eval-bar-large"><div class="eval-progress eval-progress-large" id="eval-1-promedio-bar"></div></div></div>'+
+    '<div class="eval-observacion"><div class="eval-obs-label">📌 Comentario del Entrenador:</div><p id="eval-1-observacion" class="eval-obs-text">—</p></div>'+
+    '</div>'+
+    '<div class="semestre-card" data-semestre="2"><div class="semestre-title">2do Semestre 2026</div>'+
+    '<div class="evaluacion-grid">'+
+      '<div class="eval-metric"><div class="eval-label">Técnica Táctica</div><div class="eval-value" id="eval-2-tecnica">—</div><div class="eval-unit">/10</div><div class="eval-bar"><div class="eval-progress" id="eval-2-tecnica-bar"></div></div></div>'+
+      '<div class="eval-metric"><div class="eval-label">Actitud</div><div class="eval-value" id="eval-2-actitud">—</div><div class="eval-unit">/10</div><div class="eval-bar"><div class="eval-progress" id="eval-2-actitud-bar"></div></div></div>'+
+    '</div><div class="eval-separator"></div>'+
+    '<div class="eval-promedio"><div class="eval-label">Promedio Final</div><div class="eval-value-large" id="eval-2-promedio">—</div><div class="eval-bar eval-bar-large"><div class="eval-progress eval-progress-large" id="eval-2-promedio-bar"></div></div></div>'+
+    '<div class="eval-observacion"><div class="eval-obs-label">📌 Comentario del Entrenador:</div><p id="eval-2-observacion" class="eval-obs-text">—</p></div>'+
+    '</div>'+
+    '<div class="eval-progresion" id="eval-progresion" style="display:none;"><div class="progresion-title">📈 Progresión por Semestre:</div><div class="progresion-items"><div class="progresion-item"><span class="progresion-label">Técnica:</span><span class="progresion-valor" id="progresion-tecnica"></span></div><div class="progresion-item"><span class="progresion-label">Actitud:</span><span class="progresion-valor" id="progresion-actitud"></span></div></div></div>'+
+  '</div></div>'+
   '<div class="fcard"><div class="fsect"><i></i>Evaluación física · 1er Semestre 2026</div>'+
     (hayFisica?(fisica+leyendaFisica):todo)+'</div>'+
   '<div class="fcard"><div class="fsect"><i></i>Evaluación antropométrica</div>'+
