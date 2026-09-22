@@ -254,6 +254,40 @@ main{max-width:980px;margin:0 auto;padding:40px 28px 80px}
 .err-box ol b{color:var(--ink)}
 .err-detail{color:var(--muted2);font-size:12px;margin-top:12px}
 
+/* ── SKELETON LOADERS ── */
+.skeleton{
+  background:linear-gradient(90deg,var(--panel2) 0%,var(--panel) 50%,var(--panel2) 100%);
+  background-size:200% 100%;
+  animation:skeleton-loading 1.5s infinite;
+  border-radius:8px;
+  height:20px;
+}
+@keyframes skeleton-loading{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+.skeleton-text{height:16px;margin-bottom:12px;border-radius:4px}
+.skeleton-title{height:28px;margin-bottom:16px;border-radius:6px}
+.skeleton-box{
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:20px;margin-bottom:16px;
+}
+.skeleton-box .skeleton{margin-bottom:12px}
+.skeleton-box .skeleton:last-child{margin-bottom:0}
+.skeleton-field{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;
+}
+.skeleton-field .skeleton{height:24px}
+.skeleton-avatar{
+  width:72px;height:72px;border-radius:50%;
+  background:linear-gradient(90deg,var(--panel2) 0%,var(--panel) 50%,var(--panel2) 100%);
+  background-size:200% 100%;
+  animation:skeleton-loading 1.5s infinite;
+  margin-bottom:16px;
+}
+.skeleton-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px}
+.skeleton-grid .skeleton{height:100px}
+
 /* footer */
 footer{
   text-align:center;padding:40px 28px;color:var(--muted2);font-size:13px;
