@@ -36,6 +36,17 @@ body{
   font-family:'Inter',system-ui,-apple-system,sans-serif;
   min-height:100vh;-webkit-font-smoothing:antialiased;
 }
+/* Accesibilidad: Focus visible mejorado */
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{
+  outline:2px solid var(--pink);outline-offset:2px;
+}
+input[type="date"]:focus-visible,input[type="text"]:focus-visible,input[type="email"]:focus-visible,input[type="password"]:focus-visible{
+  outline:2px solid var(--pink);outline-offset:2px;
+}
+/* Accesibilidad: Reducir movimiento para usuarios sensibles */
+@media (prefers-reduced-motion: reduce) {
+  *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
 
 /* ── HERO SECTION ── */
 .hero-wrap{
@@ -769,23 +780,23 @@ footer strong{color:var(--muted)}
       <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Registrarse</button>
     </div>
     <div id="form-login">
-      <div class="auth-field"><label>Correo electrónico</label><input type="email" id="login-email" placeholder="tu@correo.com" autocomplete="email"></div>
-      <div class="auth-field"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
-      <button class="auth-btn" id="btn-login" onclick="doLogin()">Ingresar</button>
-      <button type="button" class="auth-btn-alt" onclick="abrirUpdate()">Actualización de Datos</button>
-      <div class="auth-err" id="login-err"></div>
+      <div class="auth-field"><label for="login-email">Correo electrónico</label><input type="email" id="login-email" aria-label="Ingresa tu correo electrónico" placeholder="tu@correo.com" autocomplete="email"></div>
+      <div class="auth-field"><label for="login-pass">Contraseña</label><input type="password" id="login-pass" aria-label="Ingresa tu contraseña" placeholder="••••••••" autocomplete="current-password"></div>
+      <button class="auth-btn" id="btn-login" aria-label="Iniciar sesión" onclick="doLogin()">Ingresar</button>
+      <button type="button" class="auth-btn-alt" aria-label="Actualizar datos de cuenta" onclick="abrirUpdate()">Actualización de Datos</button>
+      <div class="auth-err" id="login-err" role="alert" aria-live="polite" aria-label="Mensaje de error"></div>
       <p class="auth-hint">¿Olvidaste tu contraseña?<br><a href="#" onclick="doResetPass()" style="color:var(--pink)">Recuperar por correo</a></p>
     </div>
     <div id="form-register" style="display:none">
-      <div class="auth-field"><label>Correo electrónico</label><input type="email" id="reg-email" placeholder="tu@correo.com" autocomplete="email"></div>
-      <div class="auth-field"><label>Contraseña (mínimo 6 caracteres)</label><input type="password" id="reg-pass" placeholder="••••••••" autocomplete="new-password"></div>
-      <button class="auth-btn" id="btn-register" onclick="doRegister()">Crear cuenta</button>
-      <div class="auth-err" id="register-err"></div>
+      <div class="auth-field"><label for="reg-email">Correo electrónico</label><input type="email" id="reg-email" aria-label="Ingresa tu correo electrónico para registrarse" placeholder="tu@correo.com" autocomplete="email"></div>
+      <div class="auth-field"><label for="reg-pass">Contraseña (mínimo 6 caracteres)</label><input type="password" id="reg-pass" aria-label="Crea una contraseña de al menos 6 caracteres" placeholder="••••••••" autocomplete="new-password"></div>
+      <button class="auth-btn" id="btn-register" aria-label="Crear nueva cuenta" onclick="doRegister()">Crear cuenta</button>
+      <div class="auth-err" id="register-err" role="alert" aria-live="polite" aria-label="Mensaje de error en registro"></div>
       <p class="auth-hint">Usa el correo que registraste en la academia. Solo verás las fichas de tus jugadores.</p>
     </div>
   </div>
 </div>
-<button class="auth-logout" id="btn-logout" onclick="doLogout()">⎋ Cerrar sesión</button>
+<button class="auth-logout" id="btn-logout" aria-label="Cerrar sesión y salir de la aplicación" onclick="doLogout()">⎋ Cerrar sesión</button>
 
 <!-- ══ HOME / LANDING ══ -->
 <div class="home-view" id="view-home">
@@ -793,39 +804,39 @@ footer strong{color:var(--muted)}
     <img class="home-logo" id="homeLogo" alt="Acción Fútbol">
     <h1 class="home-title">Bienvenidos a<br><em>Acción Fútbol</em></h1>
     <div class="home-buttons">
-      <button class="home-btn home-btn-primary" id="btn-ficha">
+      <button class="home-btn home-btn-primary" id="btn-ficha" aria-label="Ver ficha completa del jugador con asistencia y evaluaciones">
         <span class="home-btn-icon">📋</span>
         <span>Ficha Jugador</span>
       </button>
-      <button class="home-btn home-btn-ghost" id="btn-partidos" style="display:none">
+      <button class="home-btn home-btn-ghost" id="btn-partidos" aria-label="Ver detalles de partidos y minutaje" style="display:none">
         <span class="home-btn-icon">⚽</span>
         <span>Detalles de Partidos</span>
       </button>
-      <button class="home-btn home-btn-ghost" id="btn-planificaciones" style="display:none">
+      <button class="home-btn home-btn-ghost" id="btn-planificaciones" aria-label="Ver planificaciones de entrenamientos" style="display:none">
         <span class="home-btn-icon">📅</span>
         <span>Planificaciones</span>
       </button>
-      <button class="home-btn home-btn-ghost" id="btn-calendario" style="display:none">
+      <button class="home-btn home-btn-ghost" id="btn-calendario" aria-label="Ver calendario de entrenamientos Seniors" style="display:none">
         <span class="home-btn-icon">🗓️</span>
         <span>Calendario Seniors</span>
       </button>
-      <a class="home-btn home-btn-ghost" id="btn-ig-senior" href="https://www.instagram.com/accionfutbolsenior?igsh=MThkMTVnaDRrdm51cA==" target="_blank" rel="noopener" style="display:none;text-decoration:none">
+      <a class="home-btn home-btn-ghost" id="btn-ig-senior" href="https://www.instagram.com/accionfutbolsenior?igsh=MThkMTVnaDRrdm51cA==" target="_blank" rel="noopener" aria-label="Visitar Instagram de Acción Fútbol Senior" style="display:none;text-decoration:none">
         <span class="home-btn-icon">📸</span>
         <span>Instagram Acción Fútbol Senior</span>
       </a>
-      <button class="home-btn home-btn-ghost" id="btn-fotos">
+      <button class="home-btn home-btn-ghost" id="btn-fotos" aria-label="Ver fotos y videos de entrenamientos y partidos">
         <span class="home-btn-icon">📷</span>
         <span>Fotos y Videos</span>
       </button>
-      <button class="home-btn home-btn-ghost" id="btn-indumentaria">
+      <button class="home-btn home-btn-ghost" id="btn-indumentaria" aria-label="Solicitar indumentaria (uniforme)">
         <span class="home-btn-icon">👕</span>
         <span>Solicitud de Indumentaria</span>
       </button>
-      <a class="home-btn home-btn-ghost" id="btn-gira" href="https://bit.ly/m/lagiraaccionfutbolbuenosairescup2026" target="_blank" rel="noopener" style="display:none;text-decoration:none">
+      <a class="home-btn home-btn-ghost" id="btn-gira" href="https://bit.ly/m/lagiraaccionfutbolbuenosairescup2026" target="_blank" rel="noopener" aria-label="Ver información sobre Gira Buenos Aires Cup 2026" style="display:none;text-decoration:none">
         <span class="home-btn-icon">✈️</span>
         <span>Gira Buenos Aires Cup 2026</span>
       </a>
-      <a class="home-btn home-btn-ghost" id="btn-charla" href="https://bit.ly/charlaspodcastaccionfutbolpro" target="_blank" rel="noopener" style="display:none;text-decoration:none">
+      <a class="home-btn home-btn-ghost" id="btn-charla" href="https://bit.ly/charlaspodcastaccionfutbolpro" target="_blank" rel="noopener" aria-label="Escuchar charla y podcast Tiempo Extra de Acción Fútbol" style="display:none;text-decoration:none">
         <span class="home-btn-icon">🎙️</span>
         <span>Charla y Podcast Tiempo Extra - Acción Fútbol</span>
       </a>
@@ -846,7 +857,7 @@ footer strong{color:var(--muted)}
         <span>Portal del apoderado</span>
       </div>
     </div>
-    <a class="back-link" id="btn-inicio" style="margin-left:auto;margin-right:18px">← Inicio</a>
+    <a class="back-link" id="btn-inicio" aria-label="Volver al inicio" style="margin-left:auto;margin-right:18px">← Inicio</a>
     <div class="status-pill">
       <span class="dot" id="dot"></span>
       <span id="statusTxt">Cargando…</span>
@@ -867,8 +878,9 @@ footer strong{color:var(--muted)}
         <span class="search-ico">⌕</span>
         <input id="q" type="text"
           placeholder="RUT o nombre del jugador"
+          aria-label="Buscar jugador por RUT o nombre"
           autocomplete="off" spellcheck="false" disabled>
-        <button class="btn-search" id="go" disabled>Buscar</button>
+        <button class="btn-search" id="go" aria-label="Ejecutar búsqueda" disabled>Buscar</button>
       </div>
       <p class="search-hint" id="hint">Cargando base de jugadores…</p>
       <div class="picker" id="picker" style="display:none"></div>
@@ -878,12 +890,12 @@ footer strong{color:var(--muted)}
 
 <!-- ══ MAIN ══ -->
 <main>
-  <div class="loader" id="loader">
-    <div class="spin"></div>
+  <div class="loader" id="loader" role="status" aria-live="polite" aria-label="Cargando datos">
+    <div class="spin" aria-hidden="true"></div>
     <span>Conectando con la base de datos…</span>
   </div>
 
-  <div class="err-box" id="errBox">
+  <div class="err-box" id="errBox" role="alert" aria-live="polite" aria-label="Mensaje de error">
     <h4>⚠ No se pudo cargar la base de datos</h4>
     <ol>
       <li>Verifica tu conexión a internet.</li>
