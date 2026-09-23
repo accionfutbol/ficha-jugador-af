@@ -1284,6 +1284,7 @@ const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 let PLAYERS = [], current = null, IDX_RUT = {}, IDX_CORREO = {};
+let currentEvalData = null;
 const $ = id => document.getElementById(id);
 $('logoImg').src = LOGO;
 $('homeLogo').src = LOGO;
@@ -1977,7 +1978,7 @@ function renderDonutAsis(p){
   if(DONUT_ASIS){ DONUT_ASIS.destroy(); DONUT_ASIS=null; }
   DONUT_ASIS=new Chart(cv,{type:'doughnut',data:{datasets:[{data:[pct,Math.max(0,100-pct)],backgroundColor:['#27c281','#26262c'],borderWidth:0}]},options:{cutout:'74%',plugins:{legend:{display:false},tooltip:{enabled:false}},responsive:true,maintainAspectRatio:false}});
 }
-function notFound(){current=null;$('ficha').classList.remove('show');$('morosidad').style.display='none';$('empty').classList.add('show');}
+function notFound(){current=null;currentEvalData=null;$('ficha').classList.remove('show');$('morosidad').style.display='none';$('empty').classList.add('show');}
 
 function isMoroso(p){
   const pago = (p.pagoMens||'').toUpperCase().trim();
@@ -2168,11 +2169,60 @@ $('pdf').onclick=async ()=>{
     ['% Grasa corporal',p.gc?p.gc+' %':''],['% Masa muscular',p.mm?p.mm+' %':'']
   ]);
 
-  // footer PDF
-  doc.setDrawColor(...LINE);doc.line(M,282,W-M,282);
+  // Evaluación del entrenador
+  if(currentEvalData && currentEvalData.primerSemestre){
+    const evalBadgeTxt=n=>{if(!n&&n!==0)return '';n=parseFloat(n);if(n>=6)return 'DESTACADO';if(n>=5)return 'ACEPTABLE';return 'EN DESARROLLO';};
+    const evalColor=n=>{n=parseFloat(n);if(n>=6)return[46,204,113];if(n>=5)return[52,152,219];return[243,156,18];};
+    function secEval(title,sem){
+      if(y>245){doc.addPage();y=20;}
+      const tec=parseFloat(sem.notaTecnica)||0;
+      const act=parseFloat(sem.notaActitud)||0;
+      const prom=parseFloat(sem.promedio)||0;
+      const obs=sem.observacion||'';
+      doc.setFillColor(...PINK);doc.circle(M+1.5,y-1.5,1.3,'F');
+      doc.setTextColor(...DEEP);doc.setFont('helvetica','bold');doc.setFontSize(10);
+      doc.text(title.toUpperCase(),M+6,y);y+=4;
+      doc.setDrawColor(...LINE);doc.setLineWidth(0.25);doc.line(M,y,W-M,y);y+=8;
+      const barW=50,barH=5;
+      [['Técnica Táctica',tec],['Actitud',act],['Promedio Final',prom]].forEach(([lbl,val],i)=>{
+        const bx=M,by=y+i*16;
+        doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...MUT);
+        doc.text(lbl.toUpperCase(),bx,by);
+        doc.setFillColor(230,230,235);doc.roundedRect(bx,by+2,barW,barH,2,2,'F');
+        const fill=Math.min(val/7,1)*barW;
+        const bc=evalColor(val);
+        doc.setFillColor(...bc);doc.roundedRect(bx,by+2,fill,barH,2,2,'F');
+        doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(...INK);
+        doc.text(val.toFixed(1)+'/7',bx+barW+4,by+6);
+        const badge=evalBadgeTxt(val);
+        if(badge){
+          const badgeX=bx+barW+22;
+          doc.setFontSize(7);doc.setTextColor(...bc);doc.text(badge,badgeX,by+6);
+        }
+      });
+      y+=48+4;
+      if(obs){
+        if(y>265){doc.addPage();y=20;}
+        doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...MUT);
+        doc.text('COMENTARIO DEL ENTRENADOR',M,y);y+=5;
+        doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...INK);
+        const lines=doc.splitTextToSize(obs,W-2*M);
+        doc.text(lines,M,y);y+=lines.length*4.5+6;
+      }
+    }
+    secEval('Evaluación del Entrenador · 1er Semestre',currentEvalData.primerSemestre);
+    if(currentEvalData.segundoSemestre && currentEvalData.segundoSemestre.notaTecnica){
+      secEval('Evaluación del Entrenador · 2do Semestre',currentEvalData.segundoSemestre);
+    }
+  }
+
+  // footer PDF (en la última página)
+  const footY=Math.max(y+5,282);
+  if(footY>290){doc.addPage();doc.setDrawColor(...LINE);doc.line(M,282,W-M,282);}else{doc.setDrawColor(...LINE);doc.line(M,footY,W-M,footY);}
+  const ftY=footY>290?288:footY+6;
   doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(...MUT);
-  doc.text('Acción Fútbol · Portal del Apoderado · Temporada 2026',M,288);
-  doc.text(p.rut,W-M,288,{align:'right'});
+  doc.text('Acción Fútbol · Portal del Apoderado · Temporada 2026',M,ftY);
+  doc.text(p.rut,W-M,ftY,{align:'right'});
 
   const safe=p.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'_');
   doc.save(`Ficha_${safe}.pdf`);
@@ -2864,6 +2914,7 @@ function renderPartidos(partidos, el){
 // ═══════════════════════════════════════════════════════════════════
 
 async function cargarEvaluacionesEntrenador(rut) {
+  currentEvalData = null;
   try {
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-mszheNP2jhZGL2AIPM6XcDZm74byaPZKE6zD4G7Pfn3YGF_OqFAnwx01dh_xavh3/exec";
     const response = await fetch(APPS_SCRIPT_URL + "?accion=obtenerEvaluacionesEntrenador&rut=" + encodeURIComponent(rut));
@@ -2873,6 +2924,7 @@ async function cargarEvaluacionesEntrenador(rut) {
       if(e1) e1.textContent='Sin evaluaciones del entrenador aún';
       return;
     }
+    currentEvalData = data;
     renderEvaluacionSemestre(1, data.primerSemestre);
     if (data.segundoSemestre && data.segundoSemestre.notaTecnica) {
       renderEvaluacionSemestre(2, data.segundoSemestre);
