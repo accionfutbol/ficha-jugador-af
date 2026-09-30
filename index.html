@@ -156,6 +156,21 @@ main{max-width:980px;margin:0 auto;padding:40px 28px 80px}
   border-top-color:var(--pink);border-radius:50%;animation:sp .7s linear infinite;flex-shrink:0}
 @keyframes sp{to{transform:rotate(360deg)}}
 
+/* loading screen */
+.loading-screen{display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);
+  flex-direction:column;align-items:center;justify-content:center;gap:0;opacity:1;transition:opacity .5s}
+.loading-screen.show{display:flex}
+.loading-screen.fade-out{opacity:0;pointer-events:none}
+.loading-logo{width:64px;height:64px;margin-bottom:18px;animation:pulse-logo 1.8s ease-in-out infinite}
+@keyframes pulse-logo{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+.loading-msg{font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink);margin-bottom:24px;min-height:22px;
+  transition:opacity .3s}
+.loading-bar-wrap{width:220px;height:5px;border-radius:4px;background:var(--line);overflow:hidden}
+.loading-bar{height:100%;width:0;border-radius:4px;
+  background:linear-gradient(90deg,var(--pink),var(--pink-deep));transition:width .6s ease}
+.loading-sub{font-size:11px;color:var(--muted);margin-top:14px;letter-spacing:.04em}
+
 /* empty state */
 .empty{display:none;text-align:center;padding:50px 20px}
 .empty.show{display:block}
@@ -930,6 +945,14 @@ footer strong{color:var(--muted)}
   </div>
 </div>
 
+<!-- loading screen -->
+<div class="loading-screen" id="loading-screen">
+  <img class="loading-logo" id="loading-logo" src="" alt="AF">
+  <div class="loading-msg" id="loading-msg">Preparando todo</div>
+  <div class="loading-bar-wrap"><div class="loading-bar" id="loading-bar"></div></div>
+  <div class="loading-sub">Acción Fútbol · Temporada 2026</div>
+</div>
+
 <!-- ══ MAIN ══ -->
 <main>
   <div class="loader" id="loader" role="status" aria-live="polite" aria-label="Cargando datos">
@@ -1288,6 +1311,25 @@ let currentEvalData = null;
 const $ = id => document.getElementById(id);
 $('logoImg').src = LOGO;
 $('homeLogo').src = LOGO;
+$('loading-logo').src = LOGO;
+
+/* ── loading screen ── */
+function loadingShow(){
+  const s=$('loading-screen'); s.classList.add('show'); s.classList.remove('fade-out');
+  $('loading-bar').style.width='0%'; $('loading-msg').textContent='Preparando todo';
+}
+function loadingStep(pct,msg){
+  $('loading-bar').style.width=pct+'%';
+  const m=$('loading-msg'); m.style.opacity=0;
+  setTimeout(()=>{ m.textContent=msg; m.style.opacity=1; },200);
+}
+function loadingHide(){
+  loadingStep(100,'Optimizando la experiencia');
+  setTimeout(()=>{
+    const s=$('loading-screen'); s.classList.add('fade-out');
+    setTimeout(()=>s.classList.remove('show','fade-out'),500);
+  },600);
+}
 
 /* ── navegación entre vistas ── */
 function showHome(){
@@ -2625,6 +2667,8 @@ function renderNavHijos(idx){
 fbAuth.onAuthStateChanged(async user => {
   authListo=true;
   if(user){
+    loadingShow();
+    loadingStep(15,'Preparando todo');
     initMessaging(user.email);
     $('auth-screen').style.display='none';
     $('btn-logout').style.display='block';
@@ -2635,11 +2679,13 @@ fbAuth.onAuthStateChanged(async user => {
       rutAsociado=(user.displayName||'')||(loadRut(user.email)||'');
       $('search-wrap')&&($('search-wrap').style.display='none');
     }
-    // Cargar la base SOLO ahora (con token). El servidor devuelve solo lo permitido.
+    loadingStep(40,'Preparando todo');
     await load();
+    loadingStep(75,'Casi listo');
     try{ ajustarMenuSegmento(); }catch(e){}
     if(isAdmin){
       $('hint').innerHTML=`<b>ADMIN</b> · ${PLAYERS.length?PLAYERS.length.toLocaleString('es-CL')+' jugadores':'Sin datos'}`;
+      loadingHide();
     } else {
       if(!rutAsociado && PLAYERS && PLAYERS.length){
         const email=user.email.toLowerCase();
@@ -2651,6 +2697,7 @@ fbAuth.onAuthStateChanged(async user => {
         }
       }
       intentarMostrarFicha();
+      loadingHide();
     }
   } else {
     rutAsociado=null; PLAYERS=[]; playersListo=false;
