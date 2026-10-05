@@ -1391,11 +1391,15 @@ async function cargarFotosAdmin(sede,cat){
   const r=await fetchFotos(idToken,sede||'',cat||'');
   if(r.error){ $('fotos-result').innerHTML='<div class="partidos-empty"><p>No se pudieron cargar los álbumes ('+r.error+').</p></div>'; return; }
   let videosHTML='';
-  try{
-    const rv=await fetch(API_FOTOS+'?action=srvideos&idToken='+encodeURIComponent(idToken));
-    const dv=await rv.json();
-    if(dv.videos && dv.videos.length) videosHTML=renderSrVideos(dv.videos);
-  }catch(e){}
+  const catUp=(cat||'').toUpperCase().trim();
+  const esSeniorCat=!catUp || catUp.indexOf('SENIOR')>=0 || catUp==='AM' || catUp==='PM';
+  if(esSeniorCat){
+    try{
+      const rv=await fetch(API_FOTOS+'?action=srvideos&idToken='+encodeURIComponent(idToken));
+      const dv=await rv.json();
+      if(dv.videos && dv.videos.length) videosHTML=renderSrVideos(dv.videos);
+    }catch(e){}
+  }
   renderFotos(r.fotos, videosHTML);
 }
 async function cargarFotosApoderado(){
