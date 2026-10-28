@@ -17,7 +17,7 @@
 
 function doGet(e) {
   try {
-    var SHEET_ID = '1WhJ-XNDRC7HFy9psKuB4iM9xzY-5aWp8RduB3Jhw4jw';;
+    var SHEET_ID = '1WhJ-XNDRC7HFy9psKuB4iM9xzY-5aWp8RduB3Jhw4jw';
     var HOJA     = 'Base de Datos Apoderados';
     var ADMIN    = 'informacion@accionfutbol.cl';
 
@@ -29,9 +29,16 @@ function doGet(e) {
       if (!em) return afOut_(JSON.stringify({ exists: false }));
       var b0 = afLeerBase_(SHEET_ID, HOJA);
       var existe = b0.rows.some(function (r) {
-        return String(r[26]).toLowerCase().trim() === em;
+        return String(r[26]).toLowerCase().trim() === em ||
+               String(r[22]).toLowerCase().trim() === em;
       });
       return afOut_(JSON.stringify({ exists: existe }));
+    }
+
+    // Ruta de evaluaciones (SIN token, acceso público)
+    if (p.accion === 'obtenerEvaluacionesEntrenador') {
+      var resultado = obtenerEvaluacionesEntrenador(p.rut);
+      return afOut_(JSON.stringify(resultado));
     }
 
     // Ruta de datos: requiere token válido
@@ -42,7 +49,8 @@ function doGet(e) {
     var filtradas = (email === ADMIN)
       ? base.rows
       : base.rows.filter(function (r) {
-          return String(r[26]).toLowerCase().trim() === email;
+          return String(r[26]).toLowerCase().trim() === email ||
+                 String(r[22]).toLowerCase().trim() === email;
         });
 
     return afOut_(JSON.stringify(base.head.concat(filtradas)));
@@ -52,11 +60,16 @@ function doGet(e) {
   }
 }
 
+// Delegue POST a GET para evitar problemas de CORS
+function doPost(e) {
+  return doGet(e);
+}
+
 function afLeerBase_(sheetId, hoja) {
   var ws = SpreadsheetApp.openById(sheetId).getSheetByName(hoja);
   if (!ws) throw new Error('Hoja no encontrada');
   var lastRow = ws.getLastRow();
-  var cols = Math.min(73, ws.getLastColumn());
+  var cols = Math.min(77, ws.getLastColumn());
   var data = ws.getRange(1, 1, lastRow, cols).getValues();
   var header = 0;
   for (var i = 0; i < Math.min(data.length, 12); i++) {
@@ -100,76 +113,67 @@ function afOut_(str) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// EVALUACIONES DEL ENTRENADOR (POST)
+// EVALUACIONES (técnica, física, antropométrica) — ambos semestres
 // ═══════════════════════════════════════════════════════════════════
-
-function doPost(e) {
-  try {
-    var p = (e && e.parameter) ? e.parameter : {};
-
-    // Acción: obtener evaluaciones del entrenador
-    if (p.accion === 'obtenerEvaluacionesEntrenador') {
-      var resultado = obtenerEvaluacionesEntrenador(p.rut);
-      return ContentService.createTextOutput(JSON.stringify(resultado))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({ error: 'Acción no válida' }))
-      .setMimeType(ContentService.MimeType.JSON);
-
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ error: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
 
 function obtenerEvaluacionesEntrenador(rut) {
   try {
-    const PLANILLA_ID = "1s90v7MoQ3tHLBYnOaoq3SsArNKeNQqbxiI2bCcmPoKA"; // ← REEMPLAZA CON ID REAL
-    const NOMBRE_HOJA = "NOTAS EV. TECN 2026";
+    var PLANILLA_ID = "1s90v7MoQ3tHLBYnOaoq3SsArNKeNQqbxiI2bCcmPoKA";
+    var ss = SpreadsheetApp.openById(PLANILLA_ID);
+    var rutStr = String(rut).trim();
+    var resultado = { rut: rut };
 
-    const ss = SpreadsheetApp.openById(PLANILLA_ID);
-    const hoja = ss.getSheetByName(NOMBRE_HOJA);
-
-    if (!hoja) {
-      Logger.log("ERROR: No se encontró la hoja " + NOMBRE_HOJA);
-      return null;
-    }
-
-    const datos = hoja.getDataRange().getValues();
-
-    const INDICE_RUT = 0;
-    const INDICE_P1_TECNICA = 15;   // P
-    const INDICE_P1_ACTITUD = 21;   // V
-    const INDICE_P1_PROMEDIO = 23;  // X
-    const INDICE_P1_OBSERVACION = 24; // Y
-    const INDICE_P2_TECNICA = 26;   // AA
-    const INDICE_P2_ACTITUD = 28;   // AC
-    const INDICE_P2_PROMEDIO = 30;  // AE
-    const INDICE_P2_OBSERVACION = 32; // AG
-
-    for (let i = 2; i < datos.length; i++) {
-      if (datos[i][INDICE_RUT] === rut || String(datos[i][INDICE_RUT]).trim() === String(rut).trim()) {
-        return {
-          rut: rut,
-          primerSemestre: {
-            notaTecnica: datos[i][INDICE_P1_TECNICA],
-            notaActitud: datos[i][INDICE_P1_ACTITUD],
-            promedio: datos[i][INDICE_P1_PROMEDIO],
-            observacion: datos[i][INDICE_P1_OBSERVACION] || ""
-          },
-          segundoSemestre: {
-            notaTecnica: datos[i][INDICE_P2_TECNICA],
-            notaActitud: datos[i][INDICE_P2_ACTITUD],
-            promedio: datos[i][INDICE_P2_PROMEDIO],
-            observacion: datos[i][INDICE_P2_OBSERVACION] || ""
-          }
-        };
+    // ── Evaluación técnica (NOTAS EV. TECN 2026) ──
+    var hTec = ss.getSheetByName("NOTAS EV. TECN 2026");
+    if (hTec) {
+      var dTec = hTec.getDataRange().getValues();
+      for (var i = 2; i < dTec.length; i++) {
+        if (String(dTec[i][0]).trim() === rutStr) {
+          resultado.primerSemestre = {
+            notaTecnica: dTec[i][15], notaActitud: dTec[i][21],
+            promedio: dTec[i][23], observacion: dTec[i][24] || ""
+          };
+          resultado.segundoSemestre = {
+            notaTecnica: dTec[i][26], notaActitud: dTec[i][28],
+            promedio: dTec[i][30], observacion: dTec[i][32] || ""
+          };
+          break;
+        }
       }
     }
 
-    Logger.log("No se encontró jugador con RUT: " + rut);
-    return null;
+    // ── Evaluación física (EV. FISICA) ──
+    var hFis = ss.getSheetByName("EV. FISICA");
+    if (hFis) {
+      var dFis = hFis.getDataRange().getValues();
+      for (var i = 1; i < dFis.length; i++) {
+        if (String(dFis[i][0]).trim() === rutStr) {
+          resultado.fisica = {
+            primerSemestre: { salto: dFis[i][16], vel30: dFis[i][17], ift: dFis[i][18], estado: dFis[i][19] },
+            segundoSemestre: { salto: dFis[i][20], vel30: dFis[i][21], ift: dFis[i][22], estado: dFis[i][23] }
+          };
+          break;
+        }
+      }
+    }
+
+    // ── Evaluación antropométrica (EV. ANTROPOMETRICA) ──
+    var hAntro = ss.getSheetByName("EV. ANTROPOMETRICA");
+    if (hAntro) {
+      var dAntro = hAntro.getDataRange().getValues();
+      for (var i = 1; i < dAntro.length; i++) {
+        if (String(dAntro[i][0]).trim() === rutStr) {
+          resultado.antropometrica = {
+            primerSemestre: { altura: dAntro[i][19], peso: dAntro[i][20], gc: dAntro[i][21], imc: dAntro[i][22], mm: dAntro[i][23] },
+            segundoSemestre: { altura: dAntro[i][25], peso: dAntro[i][26], gc: dAntro[i][27], imc: dAntro[i][28], mm: dAntro[i][29] }
+          };
+          break;
+        }
+      }
+    }
+
+    if (!resultado.primerSemestre && !resultado.fisica && !resultado.antropometrica) return null;
+    return resultado;
 
   } catch (error) {
     Logger.log("ERROR en obtenerEvaluacionesEntrenador: " + error.message);

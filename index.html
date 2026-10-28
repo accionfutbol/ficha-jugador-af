@@ -398,6 +398,19 @@ footer strong{color:var(--muted)}
 .home-btn-ghost:hover{border-color:var(--pink);background:var(--panel2)}
 .nutricion-sub{display:flex;flex-direction:column;gap:8px;padding:0 12px;margin-top:-4px;margin-bottom:8px;animation:rise .3s ease}
 .nutricion-opt{font-size:13px!important;padding:14px 18px!important;border-left:3px solid var(--pink)!important;margin-left:8px}
+.nutri-frame-wrap{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:16px}
+.nutri-frame{width:100%;height:70vh;border:none;border-radius:0 0 16px 16px}
+.nutri-actions{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.nutri-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:12px;font-family:'Oswald',sans-serif;font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;cursor:pointer;transition:filter .2s,transform .15s;border:none}
+.nutri-btn:active{transform:scale(.97)}
+.nutri-btn-primary{background:var(--pink);color:#fff}
+.nutri-btn-primary:hover{filter:brightness(1.1)}
+.nutri-btn-outline{background:transparent;color:var(--pink);border:2px solid var(--pink)}
+.nutri-btn-outline:hover{background:rgba(255,46,147,.1)}
+.nutri-empty{text-align:center;padding:48px 24px;background:var(--panel);border:1px solid var(--line);border-radius:16px}
+.nutri-empty .nutri-ico{font-size:48px;margin-bottom:12px}
+.nutri-empty h3{font-family:'Oswald',sans-serif;color:var(--ink);margin:0 0 8px}
+.nutri-empty p{color:var(--muted);font-size:14px;margin:0}
 .home-btn-soon{margin-left:auto;font-size:9.5px;letter-spacing:.12em;color:var(--muted2);
   border:1px solid var(--line);border-radius:999px;padding:3px 8px;font-family:'Inter';font-weight:500;text-transform:uppercase}
 .back-link{
@@ -925,13 +938,37 @@ footer strong{color:var(--muted)}
           <span class="home-btn-icon">📋</span>
           <span>Formulario Atención Nutricional</span>
         </a>
-        <a class="home-btn home-btn-ghost nutricion-opt" id="btn-informe-nutri" href="#" target="_blank" rel="noopener" style="text-decoration:none">
+        <button class="home-btn home-btn-ghost nutricion-opt" id="btn-informe-nutri" onclick="abrirInformeNutricional()">
           <span class="home-btn-icon">📊</span>
           <span>Tu Informe Nutricional</span>
-        </a>
+        </button>
       </div>
     </div>
   </div>
+</div>
+
+<!-- ══ INFORME NUTRICIONAL VIEW ══ -->
+<div id="view-nutricion" style="display:none">
+  <div class="hero-wrap">
+    <nav>
+      <div class="logo-wrap">
+        <img class="logo-img" id="logoImgNutri" alt="Acción Fútbol">
+        <div class="brand"><b>Acción Fútbol</b><span>Informe Nutricional</span></div>
+      </div>
+      <a class="back-link" id="btn-nutri-inicio">← Inicio</a>
+    </nav>
+    <div class="hero-content">
+      <div class="eyebrow">Tu salud</div>
+      <h1>Informe<br><em>Nutricional</em></h1>
+      <p class="subtitle">Revisa y descarga tu informe nutricional personalizado.</p>
+    </div>
+  </div>
+  <main>
+    <div id="nutricion-content"></div>
+  </main>
+  <footer>
+    <strong>Acción Fútbol</strong> · Informe Nutricional · Temporada 2026
+  </footer>
 </div>
 
 <!-- ══ FICHA VIEW ══ -->
@@ -1334,7 +1371,7 @@ const MESES_NOMBRE = {ENERO:0,FEBRERO:1,MARZO:2,ABRIL:3,MAYO:4,JUNIO:5,JULIO:6,A
 
 const C = {rut:0,nombre:1,nac:6,edad:8,sede:9,tipo:10,cat:11,pos:20,pie:21,torneo:45,part:46,min:47,
            salto:53,saltoEst:54,vel30:55,velEst:56,ift:57,iftEst:58,altura:59,peso:60,imc:61,gc:62,mm:63,foto:72,
-           pagoMens:4,nMor:5};
+           pagoMens:4,nMor:5,informeNutri:76};
 const MES_BASE = 28;
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -1505,8 +1542,60 @@ function toggleNutricion(){
   if(!sub) return;
   sub.style.display = sub.style.display==='none' ? 'flex' : 'none';
 }
+function extractDriveId(url){
+  if(!url) return null;
+  var m = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  if(m) return {type:'folder',id:m[1]};
+  m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if(m) return {type:'file',id:m[1]};
+  m = url.match(/id=([a-zA-Z0-9_-]+)/);
+  if(m) return {type:'file',id:m[1]};
+  return null;
+}
+function abrirInformeNutricional(){
+  var jugadores = jugadoresAsociados();
+  var link = '';
+  for(var i=0;i<jugadores.length;i++){
+    if(jugadores[i].informeNutri){ link = jugadores[i].informeNutri; break; }
+  }
+  if(!link && current && current.informeNutri) link = current.informeNutri;
+
+  var views = ['view-home','view-ficha','view-fotos','view-partidos','view-plan','view-miasist','view-calendario','view-nutricion'];
+  views.forEach(function(v){ var el=$(v); if(el) el.style.display='none'; });
+  $('view-nutricion').style.display='block';
+  $('logoImgNutri').src = LOGO;
+  window.scrollTo({top:0});
+
+  var cont = $('nutricion-content');
+  if(!link){
+    cont.innerHTML = '<div class="nutri-empty"><div class="nutri-ico">📊</div><h3>Sin informe disponible</h3><p>Aún no se ha cargado tu informe nutricional.<br>Consulta con tu entrenador.</p></div>';
+    return;
+  }
+
+  var info = extractDriveId(link);
+  var embedUrl, openUrl;
+  if(info && info.type==='folder'){
+    embedUrl = 'https://drive.google.com/embeddedfolderview?id='+info.id+'#list';
+    openUrl = 'https://drive.google.com/drive/folders/'+info.id;
+  } else if(info && info.type==='file'){
+    embedUrl = 'https://drive.google.com/file/d/'+info.id+'/preview';
+    openUrl = 'https://drive.google.com/file/d/'+info.id+'/view';
+  } else {
+    embedUrl = link;
+    openUrl = link;
+  }
+
+  cont.innerHTML =
+    '<div class="nutri-actions">'+
+      '<a class="nutri-btn nutri-btn-primary" href="'+esc(openUrl)+'" target="_blank" rel="noopener">📂 Abrir en Google Drive</a>'+
+      (info && info.type==='file' ? '<a class="nutri-btn nutri-btn-outline" href="https://drive.google.com/uc?export=download&id='+info.id+'" target="_blank" rel="noopener">⬇ Descargar</a>' : '')+
+    '</div>'+
+    '<div class="nutri-frame-wrap">'+
+      '<iframe class="nutri-frame" src="'+esc(embedUrl)+'" allowfullscreen></iframe>'+
+    '</div>';
+}
 function abrirVistaSenior(id){
-  ['view-home','view-ficha','view-fotos','view-partidos','view-plan','view-miasist','view-calendario'].forEach(v=>{ const el=$(v); if(el) el.style.display='none'; });
+  ['view-home','view-ficha','view-fotos','view-partidos','view-plan','view-miasist','view-calendario','view-nutricion'].forEach(v=>{ const el=$(v); if(el) el.style.display='none'; });
   $(id).style.display='block'; window.scrollTo({top:0});
 }
 function volverHomeSenior(id){ const el=$(id); if(el) el.style.display='none'; $('view-home').style.display='flex'; window.scrollTo({top:0}); }
@@ -1713,6 +1802,7 @@ $('lb')&&($('lb').onclick=(e)=>{ if(e.target.id==='lb') $('lb').classList.remove
 $('btn-fotos').onclick = showFotos;
 $('fotos-ver')&&($('fotos-ver').onclick=()=>cargarFotosAdmin($('fotos-sede').value,$('fotos-cat').value));
 $('btn-fotos-inicio')&&($('btn-fotos-inicio').onclick=()=>{ $('view-fotos').style.display='none'; $('view-home').style.display='flex'; });
+$('btn-nutri-inicio')&&($('btn-nutri-inicio').onclick=()=>{ $('view-nutricion').style.display='none'; $('view-home').style.display='flex'; window.scrollTo({top:0}); });
 $('btn-indumentaria').onclick = ()=>window.open('https://forms.gle/u31QF86g4GES75Uq8', '_blank');
 
 
@@ -1822,7 +1912,7 @@ async function fetchAndUpdatePlayers(){
       vel30:num(r[C.vel30]),velEst:clean(r[C.velEst]),
       ift:num(r[C.ift]),iftEst:clean(r[C.iftEst]),
       altura:num(r[C.altura]),peso:num(r[C.peso]),imc:num(r[C.imc]),
-      gc:num(r[C.gc]),mm:num(r[C.mm]),months,key:norm(rut)});
+      gc:num(r[C.gc]),mm:num(r[C.mm]),informeNutri:clean(r[C.informeNutri]||''),months,key:norm(rut)});
   }
   const best={};
   for(const p of out){
