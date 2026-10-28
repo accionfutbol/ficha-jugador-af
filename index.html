@@ -179,7 +179,7 @@ main{max-width:980px;margin:0 auto;padding:40px 28px 80px}
 .empty strong{color:var(--ink)}
 
 /* ── FICHA CARD ── */
-.ficha{display:none;animation:rise .4s cubic-bezier(.22,1,.36,1)}
+.ficha{display:none;animation:rise .4s cubic-bezier(.22,1,.36,1);overflow:hidden}
 .ficha.show{display:block}
 @keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 
@@ -693,9 +693,9 @@ footer strong{color:var(--muted)}
 .sem-tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:14px}
 .sem-tab{flex:1;padding:10px 0;border:none;border-radius:11px;font-family:'Oswald',sans-serif;font-weight:600;font-size:13px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s;background:transparent;color:var(--muted)}
 .sem-tab.active{background:var(--pink);color:#fff}
-.sem-slider{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:0}
+.sem-slider{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:0;width:100%}
 .sem-slider::-webkit-scrollbar{display:none}
-.sem-slide{min-width:100%;scroll-snap-align:start;flex-shrink:0;box-sizing:border-box}
+.sem-slide{width:100%;min-width:100%;scroll-snap-align:start;flex-shrink:0;box-sizing:border-box;padding:0 2px}
 .sem-dots{display:flex;justify-content:center;gap:8px;margin:-6px 0 14px}
 .sem-dot{width:8px;height:8px;border-radius:50%;background:var(--line);transition:background .25s,transform .25s}
 .sem-dot.active{background:var(--pink);transform:scale(1.25)}
@@ -1948,6 +1948,7 @@ function renderInsignias(p){
 function show(p){
   current=p;
   $('ficha-content').innerHTML = fichaHTML(p);
+  semInitSlider();
   setAvatar(p);
   renderInsignias(p);
   if(esCumpleanos(p.nac)) mostrarBday(p.nombre);
@@ -3074,30 +3075,33 @@ function evalBadge(nota){
 function switchSem(idx){
   var slider=document.getElementById('sem-slider');
   if(!slider) return;
+  semUpdateUI(idx);
   slider.scrollTo({left:idx*slider.offsetWidth,behavior:'smooth'});
 }
-(function(){
-  var timer;
-  function syncUI(){
-    var slider=document.getElementById('sem-slider');
-    if(!slider) return;
-    var idx=Math.round(slider.scrollLeft/slider.offsetWidth);
-    [0,1].forEach(function(i){
-      var tab=document.getElementById('sem-tab-'+i);
-      var dot=document.getElementById('sem-dot-'+i);
-      if(tab) tab.classList.toggle('active',i===idx);
-      if(dot) dot.classList.toggle('active',i===idx);
-    });
-    var hint=document.getElementById('swipe-hint');
-    if(hint&&idx===1) hint.style.display='none';
-  }
-  document.addEventListener('DOMContentLoaded',function(){
-    setTimeout(function(){
-      var slider=document.getElementById('sem-slider');
-      if(slider) slider.addEventListener('scroll',function(){clearTimeout(timer);timer=setTimeout(syncUI,60);});
-    },500);
+function semUpdateUI(idx){
+  [0,1].forEach(function(i){
+    var tab=document.getElementById('sem-tab-'+i);
+    var dot=document.getElementById('sem-dot-'+i);
+    if(tab) tab.classList.toggle('active',i===idx);
+    if(dot) dot.classList.toggle('active',i===idx);
   });
-})();
+  var hint=document.getElementById('swipe-hint');
+  if(hint&&idx===1) hint.style.display='none';
+}
+var _semScrollTimer;
+function semInitSlider(){
+  var slider=document.getElementById('sem-slider');
+  if(!slider) return;
+  slider.scrollLeft=0;
+  semUpdateUI(0);
+  slider.onscroll=function(){
+    clearTimeout(_semScrollTimer);
+    _semScrollTimer=setTimeout(function(){
+      var w=slider.offsetWidth;
+      if(w>0) semUpdateUI(Math.round(slider.scrollLeft/w));
+    },60);
+  };
+}
 
 function renderEvaluacionSemestre(sem, datos) {
   var tecnica = parseFloat(datos.notaTecnica) || 0;
