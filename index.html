@@ -398,15 +398,8 @@ footer strong{color:var(--muted)}
 .home-btn-ghost:hover{border-color:var(--pink);background:var(--panel2)}
 .nutricion-sub{display:flex;flex-direction:column;gap:8px;padding:0 12px;margin-top:-4px;margin-bottom:8px;animation:rise .3s ease}
 .nutricion-opt{font-size:13px!important;padding:14px 18px!important;border-left:3px solid var(--pink)!important;margin-left:8px}
-.nutri-frame-wrap{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:16px}
-.nutri-frame{width:100%;height:70vh;border:none;border-radius:0 0 16px 16px}
-.nutri-actions{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.nutri-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:12px;font-family:'Oswald',sans-serif;font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;cursor:pointer;transition:filter .2s,transform .15s;border:none}
-.nutri-btn:active{transform:scale(.97)}
-.nutri-btn-primary{background:var(--pink);color:#fff}
-.nutri-btn-primary:hover{filter:brightness(1.1)}
-.nutri-btn-outline{background:transparent;color:var(--pink);border:2px solid var(--pink)}
-.nutri-btn-outline:hover{background:rgba(255,46,147,.1)}
+.nutri-frame-wrap{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:16px}
+.nutri-frame{width:100%;height:70vh;border:none;border-radius:0 0 16px 16px;background:#fff}
 .nutri-empty{text-align:center;padding:48px 24px;background:var(--panel);border:1px solid var(--line);border-radius:16px}
 .nutri-empty .nutri-ico{font-size:48px;margin-bottom:12px}
 .nutri-empty h3{font-family:'Oswald',sans-serif;color:var(--ink);margin:0 0 8px}
@@ -1586,10 +1579,6 @@ function abrirInformeNutricional(){
   }
 
   cont.innerHTML =
-    '<div class="nutri-actions">'+
-      '<a class="nutri-btn nutri-btn-primary" href="'+esc(openUrl)+'" target="_blank" rel="noopener">📂 Abrir en Google Drive</a>'+
-      (info && info.type==='file' ? '<a class="nutri-btn nutri-btn-outline" href="https://drive.google.com/uc?export=download&id='+info.id+'" target="_blank" rel="noopener">⬇ Descargar</a>' : '')+
-    '</div>'+
     '<div class="nutri-frame-wrap">'+
       '<iframe class="nutri-frame" src="'+esc(embedUrl)+'" allowfullscreen></iframe>'+
     '</div>';
