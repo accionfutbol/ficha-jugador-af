@@ -396,6 +396,8 @@ footer strong{color:var(--muted)}
 }
 .home-btn-primary:hover{filter:brightness(1.08)}
 .home-btn-ghost:hover{border-color:var(--pink);background:var(--panel2)}
+.nutricion-sub{display:flex;flex-direction:column;gap:8px;padding:0 12px;margin-top:-4px;margin-bottom:8px;animation:rise .3s ease}
+.nutricion-opt{font-size:13px!important;padding:14px 18px!important;border-left:3px solid var(--pink)!important;margin-left:8px}
 .home-btn-soon{margin-left:auto;font-size:9.5px;letter-spacing:.12em;color:var(--muted2);
   border:1px solid var(--line);border-radius:999px;padding:3px 8px;font-family:'Inter';font-weight:500;text-transform:uppercase}
 .back-link{
@@ -914,10 +916,20 @@ footer strong{color:var(--muted)}
         <span class="home-btn-icon">🏟️</span>
         <span>Prueba Captación Clubes</span>
       </a>
-      <a class="home-btn home-btn-ghost" id="btn-nutricion" href="https://forms.gle/2wTQzM1oqUAw7rUW7" target="_blank" rel="noopener" aria-label="Solicitar atención nutricional personalizada" style="display:none;text-decoration:none">
+      <button class="home-btn home-btn-ghost" id="btn-nutricion" onclick="toggleNutricion()" aria-label="Atención nutricional personalizada" style="display:none">
         <span class="home-btn-icon">🥗</span>
         <span>Atención Nutricional Personalizada</span>
-      </a>
+      </button>
+      <div id="nutricion-sub" class="nutricion-sub" style="display:none">
+        <a class="home-btn home-btn-ghost nutricion-opt" href="https://forms.gle/2wTQzM1oqUAw7rUW7" target="_blank" rel="noopener" style="text-decoration:none">
+          <span class="home-btn-icon">📋</span>
+          <span>Formulario Atención Nutricional</span>
+        </a>
+        <a class="home-btn home-btn-ghost nutricion-opt" id="btn-informe-nutri" href="#" target="_blank" rel="noopener" style="text-decoration:none">
+          <span class="home-btn-icon">📊</span>
+          <span>Tu Informe Nutricional</span>
+        </a>
+      </div>
     </div>
   </div>
 </div>
@@ -1487,6 +1499,11 @@ function ajustarMenuSegmento(){
   const show=(id,on)=>{ const el=$(id); if(el) el.style.display = on ? '' : 'none'; };
   ['btn-calendario','btn-ig-senior'].forEach(id=>show(id, sr));   // solo en segmento SENIORS
   ['btn-partidos','btn-planificaciones','btn-gira','btn-charla','btn-captacion','btn-nutricion'].forEach(id=>show(id, !sr)); // solo fuera de SENIORS
+}
+function toggleNutricion(){
+  var sub=document.getElementById('nutricion-sub');
+  if(!sub) return;
+  sub.style.display = sub.style.display==='none' ? 'flex' : 'none';
 }
 function abrirVistaSenior(id){
   ['view-home','view-ficha','view-fotos','view-partidos','view-plan','view-miasist','view-calendario'].forEach(v=>{ const el=$(v); if(el) el.style.display='none'; });
