@@ -663,6 +663,37 @@ footer strong{color:var(--muted)}
 .pg .pcard{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center}
 .pg .pcard .v{font-family:'Oswald';font-weight:700;font-size:32px;color:var(--pink)}
 .pg .pcard .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+
+/* ══ BOTTOM NAV BAR ══ */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:200;
+  background:rgba(16,16,19,.97);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-top:1px solid var(--line);
+  display:none;
+  padding:6px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+}
+.bottom-nav.visible{display:flex}
+.bottom-nav-inner{
+  display:flex;justify-content:space-around;align-items:center;
+  max-width:560px;margin:0 auto;width:100%;
+}
+.bnav-tab{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  background:none;border:none;cursor:pointer;
+  padding:6px 8px;min-width:56px;
+  color:var(--muted2);transition:color .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.bnav-tab svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:color .2s}
+.bnav-tab span{font-size:10px;font-weight:500;letter-spacing:.02em;transition:color .2s}
+.bnav-tab.active{color:var(--pink)}
+.bnav-tab.active svg{stroke:var(--pink)}
+.bnav-tab:hover:not(.active){color:var(--muted)}
+
+body.has-bnav{padding-bottom:72px}
+body.has-bnav .toast{bottom:84px}
+body.has-bnav .home-view{min-height:calc(100vh - 72px)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -1070,7 +1101,7 @@ const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agos
 const MESES_NOMBRE = {ENERO:0,FEBRERO:1,MARZO:2,ABRIL:3,MAYO:4,JUNIO:5,JULIO:6,AGOSTO:7,SEPTIEMBRE:8,OCTUBRE:9,NOVIEMBRE:10,DICIEMBRE:11};
 
 const C = {rut:0,nombre:1,nac:6,edad:8,sede:9,tipo:10,cat:11,pos:20,pie:21,torneo:45,part:46,min:47,
-           salto:53,saltoEst:54,vel30:55,velEst:56,ift:57,iftEst:58,altura:59,peso:60,imc:61,gc:62,mm:63,foto:72,
+           salto:53,saltoEst:54,vel30:55,velEst:56,ift:57,iftEst:58,altura:59,peso:60,imc:61,gc:62,mm:63,foto:-1,
            pagoMens:4,nMor:5};
 const MES_BASE = 28;
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -1204,7 +1235,7 @@ async function fetchAndUpdatePlayers(){
     for(let m=0;m<12;m++) months[m]=num(r[MES_BASE+m]);
     out.push({rut,nombre,nac:fdate(r[C.nac]),edad:num(r[C.edad]),
       sede:clean(r[C.sede]),cat:clean(r[C.cat]),pos:clean(r[C.pos]),pie:clean(r[C.pie]),correoAp:clean(r[26]).toLowerCase().trim(),
-      torneo:clean(r[C.torneo]),foto:clean(r[C.foto]),
+      torneo:clean(r[C.torneo]),foto:C.foto>=0?clean(r[C.foto]):'',
       pagoMens:clean(r[C.pagoMens]),nMor:num(r[C.nMor]),
       part:num(r[C.part]),min:num(r[C.min]),
       salto:num(r[C.salto]),saltoEst:clean(r[C.saltoEst]),
@@ -1644,6 +1675,7 @@ function showPlan(){
 function hidePlan(){
   $('view-plan').style.display='none';
   $('view-home').style.display='flex';
+  if(typeof bnavSetActive==='function') bnavSetActive('inicio');
 }
 $('btn-plan-inicio').onclick = hidePlan;
 
@@ -2179,6 +2211,7 @@ $('btn-partidos-inicio').onclick=()=>{
   $('view-partidos').style.display='none';
   $('view-home').style.display='flex';
   if(esAdmin()){ adminPartTarget=null; $('admin-part-q')&&($('admin-part-q').value=''); }
+  if(typeof bnavSetActive==='function') bnavSetActive('inicio');
 };
 
 function badgeEstado(e){
@@ -2288,6 +2321,118 @@ function renderPartidos(partidos, el){
 
 
 /* load() ahora se llama SOLO tras iniciar sesión (ver onAuthStateChanged) */
+
+/* ══ BOTTOM NAV BAR ══ */
+window.BNAV_TABS = ['inicio','ficha','partidos','plan','perfil'];
+window.bnav = function(tab){
+  var views = {
+    inicio:   'view-home',
+    ficha:    'view-ficha',
+    partidos: 'view-partidos',
+    plan:     'view-plan'
+  };
+  if(tab==='perfil'){
+    doLogout();
+    return;
+  }
+  Object.keys(views).forEach(function(k){
+    var el = $(views[k]);
+    if(el) el.style.display = (k===tab) ? (k==='inicio'?'flex':'block') : 'none';
+  });
+  window.BNAV_TABS.forEach(function(t){
+    var btn = $('bnav-'+t);
+    if(btn) btn.classList.toggle('active', t===tab);
+  });
+  window.scrollTo({top:0});
+  if(tab==='ficha') setTimeout(function(){ if(!$('q').disabled) $('q').focus(); }, 150);
+  if(tab==='partidos') showPartidos();
+  if(tab==='plan'){ $('planLogo').src=LOGO; if(!PLAN_DATA) loadPlan(); }
+}
+window.bnavSetActive = function(tab){
+  window.BNAV_TABS.forEach(function(t){
+    var btn = $('bnav-'+t);
+    if(btn) btn.classList.toggle('active', t===tab);
+  });
+};
+window.bnavShow = function(){
+  document.body.classList.add('has-bnav');
+  $('bottom-nav').classList.add('visible');
+  bnavSetActive('inicio');
+};
+window.bnavHide = function(){
+  document.body.classList.remove('has-bnav');
+  $('bottom-nav').classList.remove('visible');
+};
+
+var _origShowHome = showHome;
+showHome = function(){
+  _origShowHome();
+  $('view-partidos').style.display='none';
+  $('view-plan').style.display='none';
+  bnavSetActive('inicio');
+};
+var _origShowFicha = showFicha;
+showFicha = function(){
+  $('view-home').style.display='none';
+  $('view-partidos').style.display='none';
+  $('view-plan').style.display='none';
+  $('view-ficha').style.display='block';
+  window.scrollTo({top:0});
+  setTimeout(function(){ if(!$('q').disabled) $('q').focus(); }, 150);
+  bnavSetActive('ficha');
+};
+var _origShowPartidos = showPartidos;
+showPartidos = function(){
+  $('view-home').style.display='none';
+  $('view-ficha').style.display='none';
+  $('view-plan').style.display='none';
+  _origShowPartidos();
+  bnavSetActive('partidos');
+};
+var _origShowPlan = showPlan;
+showPlan = function(){
+  $('view-home').style.display='none';
+  $('view-ficha').style.display='none';
+  $('view-partidos').style.display='none';
+  $('view-plan').style.display='block';
+  $('planLogo').src = LOGO;
+  window.scrollTo({top:0});
+  if(!PLAN_DATA) loadPlan();
+  bnavSetActive('plan');
+};
+
+try{
+  firebase.auth().onAuthStateChanged(function(u){
+    if(u) bnavShow(); else bnavHide();
+  });
+}catch(e){}
 </script>
+
+<!-- ══ BOTTOM NAV HTML ══ -->
+<nav class="bottom-nav" id="bottom-nav">
+  <div class="bottom-nav-inner">
+    <button class="bnav-tab active" id="bnav-inicio" onclick="bnav('inicio')">
+      <svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      <span>Inicio</span>
+    </button>
+    <button class="bnav-tab" id="bnav-ficha" onclick="bnav('ficha')">
+      <svg viewBox="0 0 24 24"><path d="M16 4H8a2 2 0 0 0-2 2v14l6-3 6 3V6a2 2 0 0 0-2-2z"/></svg>
+      <span>Ficha</span>
+    </button>
+    <button class="bnav-tab" id="bnav-partidos" onclick="bnav('partidos')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10M12 2a15 15 0 0 0-4 10 15 15 0 0 0 4 10M2 12h20"/></svg>
+      <span>Partidos</span>
+    </button>
+    <button class="bnav-tab" id="bnav-plan" onclick="bnav('plan')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span>Plan</span>
+    </button>
+    <button class="bnav-tab" id="bnav-perfil" onclick="bnav('perfil')">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Salir</span>
+    </button>
+  </div>
+</nav>
+
 </body>
 </html>

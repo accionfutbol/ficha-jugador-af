@@ -1414,8 +1414,8 @@ const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agos
 const MESES_NOMBRE = {ENERO:0,FEBRERO:1,MARZO:2,ABRIL:3,MAYO:4,JUNIO:5,JULIO:6,AGOSTO:7,SEPTIEMBRE:8,OCTUBRE:9,NOVIEMBRE:10,DICIEMBRE:11};
 
 const C = {rut:0,nombre:1,nac:6,edad:8,sede:9,tipo:10,cat:11,pos:20,pie:21,torneo:45,part:46,min:47,
-           salto:53,saltoEst:54,vel30:55,velEst:56,ift:57,iftEst:58,altura:59,peso:60,imc:61,gc:62,mm:63,foto:72,
-           pagoMens:4,nMor:5,informeNutri:76};
+           salto:53,saltoEst:54,vel30:55,velEst:56,ift:57,iftEst:58,altura:59,peso:60,imc:61,gc:62,mm:63,foto:-1,
+           pagoMens:4,nMor:5,informeNutri:-1};
 const MES_BASE = 28;
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -1945,14 +1945,14 @@ async function fetchAndUpdatePlayers(){
     for(let m=0;m<12;m++) months[m]=num(r[MES_BASE+m]);
     out.push({rut,nombre,nac:fdate(r[C.nac]),edad:num(r[C.edad]),
       sede:clean(r[C.sede]),cat:clean(r[C.cat]),pos:clean(r[C.pos]),pie:clean(r[C.pie]),correoAp:clean(r[26]).toLowerCase().trim(),correoJug:clean(r[22]).toLowerCase().trim(),
-      torneo:clean(r[C.torneo]),foto:clean(r[C.foto]),
+      torneo:clean(r[C.torneo]),foto:C.foto>=0?clean(r[C.foto]):'',
       pagoMens:clean(r[C.pagoMens]),nMor:num(r[C.nMor]),
       part:num(r[C.part]),min:num(r[C.min]),
       salto:num(r[C.salto]),saltoEst:clean(r[C.saltoEst]),
       vel30:num(r[C.vel30]),velEst:clean(r[C.velEst]),
       ift:num(r[C.ift]),iftEst:clean(r[C.iftEst]),
       altura:num(r[C.altura]),peso:num(r[C.peso]),imc:num(r[C.imc]),
-      gc:num(r[C.gc]),mm:num(r[C.mm]),informeNutri:clean(r[C.informeNutri]||''),months,key:norm(rut)});
+      gc:num(r[C.gc]),mm:num(r[C.mm]),informeNutri:C.informeNutri>=0?clean(r[C.informeNutri]||''):'',months,key:norm(rut)});
   }
   const best={};
   for(const p of out){
