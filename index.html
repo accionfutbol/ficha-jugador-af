@@ -2341,6 +2341,8 @@ $('pdf').onclick=async ()=>{
   y=Math.max(chipY+12, 50+26+4);
 
   function sec(title,rows){
+    const needH=12+Math.ceil(rows.length/3)*15+7;
+    if(y+needH>280){doc.addPage();y=20;}
     // título
     doc.setFillColor(...PINK);doc.circle(M+1.5,y-1.5,1.3,'F');
     doc.setTextColor(...DEEP);doc.setFont('helvetica','bold');doc.setFontSize(10);
@@ -2374,61 +2376,110 @@ $('pdf').onclick=async ()=>{
   sec('Rendimiento en partidos',[
     ['Minutaje total',p.min?p.min+' min':''],['Partidos jugados',p.part]
   ]);
-  sec('Evaluación Física · 1er Semestre 2026',[
-    ['Salto',p.salto?(p.salto+' cm'+(p.saltoEst?' · '+estTxt(p.saltoEst):'')):''],
-    ['Velocidad 30 m',p.vel30?(p.vel30+' s'+(p.velEst?' · '+estTxt(p.velEst):'')):''],
-    ['Test 30-15 IFT',p.ift?(p.ift+' km/h'+(p.iftEst?' · '+estTxt(p.iftEst):'')):'']
-  ]);
-  sec('Evaluación antropométrica',[
-    ['Altura',p.altura?p.altura+' m':''],['Peso',p.peso?p.peso+' kg':''],['IMC',p.imc],
-    ['% Grasa corporal',p.gc?p.gc+' %':''],['% Masa muscular',p.mm?p.mm+' %':'']
-  ]);
+  // ── Evaluaciones completas desde currentEvalData ──
+  const evalBadgeTxt=n=>{if(!n&&n!==0)return '';n=parseFloat(n);if(n>=6)return 'DESTACADO';if(n>=5)return 'ACEPTABLE';return 'EN DESARROLLO';};
+  const evalColor=n=>{n=parseFloat(n);if(n>=6)return[46,204,113];if(n>=5)return[52,152,219];return[243,156,18];};
 
-  // Evaluación del entrenador
-  if(currentEvalData && currentEvalData.primerSemestre){
-    const evalBadgeTxt=n=>{if(!n&&n!==0)return '';n=parseFloat(n);if(n>=6)return 'DESTACADO';if(n>=5)return 'ACEPTABLE';return 'EN DESARROLLO';};
-    const evalColor=n=>{n=parseFloat(n);if(n>=6)return[46,204,113];if(n>=5)return[52,152,219];return[243,156,18];};
-    function secEval(title,sem){
-      if(y>245){doc.addPage();y=20;}
-      const tec=parseFloat(sem.notaTecnica)||0;
-      const act=parseFloat(sem.notaActitud)||0;
-      const prom=parseFloat(sem.promedio)||0;
-      const obs=sem.observacion||'';
-      doc.setFillColor(...PINK);doc.circle(M+1.5,y-1.5,1.3,'F');
-      doc.setTextColor(...DEEP);doc.setFont('helvetica','bold');doc.setFontSize(10);
-      doc.text(title.toUpperCase(),M+6,y);y+=4;
-      doc.setDrawColor(...LINE);doc.setLineWidth(0.25);doc.line(M,y,W-M,y);y+=8;
-      const barW=50,barH=5;
-      [['Técnica Táctica',tec],['Actitud',act],['Promedio Final',prom]].forEach(([lbl,val],i)=>{
-        const bx=M,by=y+i*16;
-        doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...MUT);
-        doc.text(lbl.toUpperCase(),bx,by);
-        doc.setFillColor(230,230,235);doc.roundedRect(bx,by+2,barW,barH,2,2,'F');
-        const fill=Math.min(val/7,1)*barW;
-        const bc=evalColor(val);
-        doc.setFillColor(...bc);doc.roundedRect(bx,by+2,fill,barH,2,2,'F');
-        doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(...INK);
-        doc.text(val.toFixed(1)+'/7',bx+barW+4,by+6);
-        const badge=evalBadgeTxt(val);
-        if(badge){
-          const badgeX=bx+barW+22;
-          doc.setFontSize(7);doc.setTextColor(...bc);doc.text(badge,badgeX,by+6);
-        }
-      });
-      y+=48+4;
-      if(obs){
-        if(y>265){doc.addPage();y=20;}
-        doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...MUT);
-        doc.text('COMENTARIO DEL ENTRENADOR',M,y);y+=5;
-        doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...INK);
-        const lines=doc.splitTextToSize(obs,W-2*M);
-        doc.text(lines,M,y);y+=lines.length*4.5+6;
+  function secEvalEntrenador(title,sem){
+    if(y>245){doc.addPage();y=20;}
+    const tec=parseFloat(sem.notaTecnica)||0;
+    const act=parseFloat(sem.notaActitud)||0;
+    const prom=parseFloat(sem.promedio)||0;
+    const obs=String(sem.observacion||'').trim();
+    doc.setFillColor(...PINK);doc.circle(M+1.5,y-1.5,1.3,'F');
+    doc.setTextColor(...DEEP);doc.setFont('helvetica','bold');doc.setFontSize(10);
+    doc.text(title.toUpperCase(),M+6,y);y+=4;
+    doc.setDrawColor(...LINE);doc.setLineWidth(0.25);doc.line(M,y,W-M,y);y+=8;
+    const barW=50,barH=5;
+    [['Técnica Táctica',tec],['Actitud',act],['Promedio Final',prom]].forEach(([lbl,val],i)=>{
+      const bx=M,by=y+i*16;
+      doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...MUT);
+      doc.text(lbl.toUpperCase(),bx,by);
+      doc.setFillColor(230,230,235);doc.roundedRect(bx,by+2,barW,barH,2,2,'F');
+      const fill=Math.min(val/7,1)*barW;
+      const bc=evalColor(val);
+      doc.setFillColor(...bc);doc.roundedRect(bx,by+2,fill,barH,2,2,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(...INK);
+      doc.text(val.toFixed(1)+'/7',bx+barW+4,by+6);
+      const badge=evalBadgeTxt(val);
+      if(badge){
+        const badgeX=bx+barW+22;
+        doc.setFontSize(7);doc.setTextColor(...bc);doc.text(badge,badgeX,by+6);
       }
+    });
+    y+=48+4;
+    if(obs){
+      if(y>265){doc.addPage();y=20;}
+      doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...MUT);
+      doc.text('COMENTARIO DEL ENTRENADOR',M,y);y+=5;
+      doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...INK);
+      const lines=doc.splitTextToSize(obs,W-2*M);
+      doc.text(lines,M,y);y+=lines.length*4.5+6;
     }
-    secEval('Evaluación del Entrenador · 1er Semestre',currentEvalData.primerSemestre);
-    if(currentEvalData.segundoSemestre && currentEvalData.segundoSemestre.notaTecnica){
-      secEval('Evaluación del Entrenador · 2do Semestre',currentEvalData.segundoSemestre);
+  }
+
+  function secEvalFisica(title,d,semIdx){
+    if(!d) return;
+    const hay=d.salto||d.vel30||d.ift;
+    if(!hay) return;
+    const estSalto=semIdx===2?'':estTxt(p.saltoEst);
+    const estVel=semIdx===2?'':estTxt(p.velEst);
+    const estIft=semIdx===2?'':estTxt(p.iftEst);
+    const rows=[];
+    if(d.salto) rows.push(['Salto',d.salto+' cm'+(estSalto?' · '+estSalto:'')]);
+    if(d.vel30) rows.push(['Velocidad 30 m',d.vel30+' s'+(estVel?' · '+estVel:'')]);
+    if(d.ift) rows.push(['Test 30-15 IFT',d.ift+' km/h'+(estIft?' · '+estIft:'')]);
+    if(rows.length) sec(title,rows);
+  }
+
+  function secEvalAntro(title,d){
+    if(!d) return;
+    const hay=d.altura||d.peso||d.imc||d.gc||d.mm;
+    if(!hay) return;
+    const rows=[];
+    if(d.altura) rows.push(['Altura',d.altura+' m']);
+    if(d.peso) rows.push(['Peso',d.peso+' kg']);
+    if(d.imc) rows.push(['IMC',String(d.imc)]);
+    if(d.gc) rows.push(['% Grasa corporal',d.gc+' %']);
+    if(d.mm) rows.push(['% Masa muscular',d.mm+' %']);
+    if(rows.length) sec(title,rows);
+  }
+
+  if(currentEvalData){
+    // 1er Semestre
+    if(currentEvalData.primerSemestre && (currentEvalData.primerSemestre.notaTecnica||currentEvalData.primerSemestre.notaActitud||currentEvalData.primerSemestre.promedio)){
+      secEvalEntrenador('Evaluación del Entrenador · 1er Semestre',currentEvalData.primerSemestre);
     }
+    if(currentEvalData.fisica){
+      secEvalFisica('Evaluación Física · 1er Semestre',currentEvalData.fisica.primerSemestre,1);
+    }
+    if(currentEvalData.antropometrica){
+      secEvalAntro('Evaluación Antropométrica · 1er Semestre',currentEvalData.antropometrica.primerSemestre);
+    }
+    // 2do Semestre
+    if(currentEvalData.segundoSemestre && (currentEvalData.segundoSemestre.notaTecnica||currentEvalData.segundoSemestre.notaActitud||currentEvalData.segundoSemestre.promedio)){
+      secEvalEntrenador('Evaluación del Entrenador · 2do Semestre',currentEvalData.segundoSemestre);
+    }
+    if(currentEvalData.fisica){
+      secEvalFisica('Evaluación Física · 2do Semestre',currentEvalData.fisica.segundoSemestre,2);
+    }
+    if(currentEvalData.antropometrica){
+      secEvalAntro('Evaluación Antropométrica · 2do Semestre',currentEvalData.antropometrica.segundoSemestre);
+    }
+  } else {
+    // Fallback: datos globales del jugador si no hay evaluaciones detalladas
+    const fisFallback=[];
+    if(p.salto) fisFallback.push(['Salto',p.salto+' cm'+(p.saltoEst?' · '+estTxt(p.saltoEst):'')]);
+    if(p.vel30) fisFallback.push(['Velocidad 30 m',p.vel30+' s'+(p.velEst?' · '+estTxt(p.velEst):'')]);
+    if(p.ift) fisFallback.push(['Test 30-15 IFT',p.ift+' km/h'+(p.iftEst?' · '+estTxt(p.iftEst):'')]);
+    if(fisFallback.length) sec('Evaluación Física',fisFallback);
+    const antFallback=[];
+    if(p.altura) antFallback.push(['Altura',p.altura+' m']);
+    if(p.peso) antFallback.push(['Peso',p.peso+' kg']);
+    if(p.imc) antFallback.push(['IMC',String(p.imc)]);
+    if(p.gc) antFallback.push(['% Grasa corporal',p.gc+' %']);
+    if(p.mm) antFallback.push(['% Masa muscular',p.mm+' %']);
+    if(antFallback.length) sec('Evaluación Antropométrica',antFallback);
   }
 
   // footer PDF (en la última página)
