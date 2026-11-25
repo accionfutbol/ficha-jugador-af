@@ -2394,6 +2394,7 @@ $('pdf').onclick=async ()=>{
     const tec=parseFloat(sem.notaTecnica)||0;
     const act=parseFloat(sem.notaActitud)||0;
     const prom=parseFloat(sem.promedio)||0;
+    if(tec===0 && act===0 && prom===0) return;
     const obs=String(sem.observacion||'').trim();
     doc.setFillColor(...PINK);doc.circle(M+1.5,y-1.5,1.3,'F');
     doc.setTextColor(...DEEP);doc.setFont('helvetica','bold');doc.setFontSize(10);
@@ -3248,7 +3249,7 @@ async function cargarEvaluacionesEntrenador(rut) {
     const data = await response.json();
     if (!data) {
       var e1=document.getElementById('eval-1-empty');
-      if(e1) e1.textContent='Sin evaluaciones aún';
+      if(e1) e1.textContent='Sin evaluaciones realizadas';
       setEmptyEval('fis');setEmptyEval('antro');
       return;
     }
@@ -3257,10 +3258,13 @@ async function cargarEvaluacionesEntrenador(rut) {
       renderEvaluacionSemestre(1, data.primerSemestre);
     } else {
       var e1=document.getElementById('eval-1-empty');
-      if(e1) e1.textContent='Sin evaluación técnica 1er semestre';
+      if(e1) e1.textContent='Sin evaluaciones realizadas';
     }
     if (data.segundoSemestre && data.segundoSemestre.notaTecnica) {
       renderEvaluacionSemestre(2, data.segundoSemestre);
+    } else {
+      var e2=document.getElementById('eval-2-empty');
+      if(e2) e2.textContent='Sin evaluaciones realizadas';
     }
     renderEvalFisica(data.fisica);
     renderEvalAntro(data.antropometrica);
@@ -3274,7 +3278,7 @@ async function cargarEvaluacionesEntrenador(rut) {
 function setEmptyEval(prefix){
   [1,2].forEach(function(s){
     var el=document.getElementById(prefix+'-'+s+'-empty');
-    if(el) el.textContent='Sin evaluación aún';
+    if(el) el.textContent='Sin evaluaciones realizadas';
   });
 }
 function renderEvalFisica(fisica){
