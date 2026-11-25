@@ -917,11 +917,24 @@ body.has-bnav .home-view{min-height:calc(100vh - 72px)}
       <p class="auth-hint">¿Olvidaste tu contraseña?<br><a href="#" onclick="doResetPass()" style="color:var(--pink)">Recuperar por correo</a></p>
     </div>
     <div id="form-register" style="display:none">
-      <div class="auth-field"><label for="reg-email">Correo electrónico</label><input type="email" id="reg-email" aria-label="Ingresa tu correo electrónico para registrarse" placeholder="tu@correo.com" autocomplete="email"></div>
-      <div class="auth-field"><label for="reg-pass">Contraseña (mínimo 6 caracteres)</label><input type="password" id="reg-pass" aria-label="Crea una contraseña de al menos 6 caracteres" placeholder="••••••••" autocomplete="new-password"></div>
-      <button class="auth-btn" id="btn-register" aria-label="Crear nueva cuenta" onclick="doRegister()">Crear cuenta</button>
-      <div class="auth-err" id="register-err" role="alert" aria-live="polite" aria-label="Mensaje de error en registro"></div>
-      <p class="auth-hint">Usa el correo que registraste en la academia. Solo verás las fichas de tus jugadores.</p>
+      <!-- PASO 1: Verificar RUT(s) -->
+      <div id="reg-step1">
+        <p class="auth-hint" style="margin-top:0;margin-bottom:14px;font-size:12px">Ingresa el RUT de tu jugador para verificar que está en la academia.</p>
+        <div class="auth-field"><label for="reg-rut">RUT del jugador — sin puntos, con guión</label><input type="text" id="reg-rut" placeholder="Ej: 12345678-9" autocomplete="off" inputmode="text"></div>
+        <button class="auth-btn" id="btn-check-rut" onclick="doCheckRut()">Verificar jugador</button>
+        <div class="auth-err" id="register-err" role="alert" aria-live="polite"></div>
+        <!-- Jugadores verificados -->
+        <div id="reg-verified-list" style="display:none;margin-top:14px"></div>
+      </div>
+      <!-- PASO 2: Crear cuenta -->
+      <div id="reg-step2" style="display:none">
+        <div id="reg-players-summary" style="margin-bottom:16px"></div>
+        <div class="auth-field"><label for="reg-email">Tu correo electrónico</label><input type="email" id="reg-email" placeholder="tu@correo.com" autocomplete="email"></div>
+        <div class="auth-field"><label for="reg-pass">Contraseña (mínimo 6 caracteres)</label><input type="password" id="reg-pass" placeholder="••••••••" autocomplete="new-password"></div>
+        <button class="auth-btn" id="btn-register" onclick="doRegister()">Crear cuenta</button>
+        <div class="auth-err" id="register-err2" role="alert" aria-live="polite"></div>
+        <p style="text-align:center;margin-top:10px"><a href="#" onclick="regVolver()" style="color:var(--muted);font-size:12px;text-decoration:underline">← Volver a modificar jugadores</a></p>
+      </div>
     </div>
   </div>
 </div>
@@ -2763,6 +2776,7 @@ function switchTab(tab){
   $('tab-login').classList.toggle('active', tab==='login');
   $('tab-register').classList.toggle('active', tab==='register');
   $('login-err').style.display = $('register-err').style.display = 'none';
+  if(tab==='register'){ $('reg-step1').style.display='block'; $('reg-step2').style.display='none'; regJugadores=[]; $('reg-verified-list').style.display='none'; }
 }
 function showAuthErr(id,msg){ const e=$(id); e.textContent=msg; e.style.display='block'; }
 function fbErr(code){
@@ -2777,41 +2791,89 @@ async function doLogin(){
   $('btn-login').disabled=false;
 }
 
-function seleccionarNumJugadores(n){
-  // Marcar botón activo
-  document.querySelectorAll('.reg-num-btn').forEach((b,i)=>{
-    b.classList.toggle('active', i+1===n);
-  });
-  // Generar campos RUT
-  const wrap = $('reg-ruts-wrap');
-  wrap.style.display = 'block';
-  wrap.innerHTML = Array.from({length:n},(_,i)=>`
-    <div class="auth-field">
-      <label>RUT jugador ${n>1?i+1:''} — sin puntos, con guión</label>
-      <input type="text" id="reg-rut-${i}" placeholder="Ej: 12345678-9" autocomplete="off" inputmode="text">
+let regJugadores = [];
+
+async function doCheckRut(){
+  const rutInput = $('reg-rut').value.trim();
+  $('register-err').style.display='none';
+  if(!rutInput){ showAuthErr('register-err','Ingresa el RUT del jugador.'); return; }
+  const rutNorm = rutInput.replace(/\./g,'').toUpperCase().trim();
+  if(regJugadores.some(j=>j.rut===rutNorm)){
+    showAuthErr('register-err','Este jugador ya fue agregado.'); return;
+  }
+  $('btn-check-rut').disabled=true;
+  $('btn-check-rut').textContent='Verificando...';
+  try{
+    const r = await fetch(API+'?action=checkRut&rut='+encodeURIComponent(rutInput),{cache:'no-store'});
+    const d = await r.json();
+    if(!d || !d.exists){
+      showAuthErr('register-err','Este RUT no está registrado en la academia. Verifica que esté correcto o contáctanos.');
+      $('btn-check-rut').disabled=false; $('btn-check-rut').textContent='Verificar jugador';
+      return;
+    }
+    regJugadores.push({rut:rutNorm, nombre:d.nombre, sede:d.sede, cat:d.cat, emailHint:d.emailHint});
+    $('reg-rut').value='';
+    renderRegVerified();
+  }catch(e){
+    showAuthErr('register-err','No se pudo verificar. Intenta de nuevo.');
+  }
+  $('btn-check-rut').disabled=false; $('btn-check-rut').textContent='Verificar jugador';
+}
+
+function renderRegVerified(){
+  const list=$('reg-verified-list');
+  if(!regJugadores.length){ list.style.display='none'; return; }
+  list.style.display='block';
+  list.innerHTML = regJugadores.map((j,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:8px">
+      <div>
+        <div style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:var(--text)">${j.nombre}</div>
+        <div style="font-size:11px;color:var(--muted)">${[j.sede,j.cat].filter(Boolean).join(' · ')}</div>
+      </div>
+      <button onclick="regRemoverJugador(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px 8px" title="Quitar">✕</button>
+    </div>`).join('') +
+    `<p style="text-align:center;margin:12px 0 0"><a href="#" onclick="regIrPaso2()" style="color:var(--pink);font-size:13px;font-weight:600;text-decoration:none">Continuar con el registro →</a></p>
+     <p class="auth-hint" style="margin-top:8px">¿Tienes otro hijo en la academia? Agrega su RUT arriba antes de continuar.</p>`;
+}
+
+function regRemoverJugador(i){
+  regJugadores.splice(i,1);
+  renderRegVerified();
+}
+
+function regIrPaso2(){
+  if(!regJugadores.length) return;
+  $('reg-players-summary').innerHTML = regJugadores.map(j=>`
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:8px">
+      <div style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;color:var(--text)">${j.nombre}</div>
+      <div style="font-size:11px;color:var(--muted)">${[j.sede,j.cat].filter(Boolean).join(' · ')}</div>
+      ${j.emailHint?'<div style="font-size:11px;color:var(--pink);margin-top:4px">Correo: '+j.emailHint+'</div>':''}
     </div>`).join('');
-  $('btn-register').style.display = 'block';
-  $('register-err').style.display = 'none';
+  $('reg-step1').style.display='none';
+  $('reg-step2').style.display='block';
+  return false;
+}
+
+function regVolver(){
+  $('reg-step2').style.display='none';
+  $('reg-step1').style.display='block';
+  $('register-err2').style.display='none';
+  return false;
 }
 
 async function doRegister(){
   const email=$('reg-email').value.trim().toLowerCase(), pass=$('reg-pass').value;
-  $('register-err').style.display='none';
-  if(!email){ showAuthErr('register-err','Ingresa tu correo.'); return; }
-  // Validar contra la academia SIN exponer datos (ruta checkEmail del servidor)
-  if(email!==ADMIN_EMAIL){
-    try{
-      const r=await fetch(API+'?action=checkEmail&email='+encodeURIComponent(email),{cache:'no-store'});
-      const d=await r.json();
-      if(!d || !d.exists){ showAuthErr('register-err','Este correo no está registrado en la academia. Contáctanos para registrarlo.'); return; }
-    }catch(e){ showAuthErr('register-err','No se pudo validar el correo. Intenta de nuevo.'); return; }
-  }
+  $('register-err2').style.display='none';
+  if(!email){ showAuthErr('register-err2','Ingresa tu correo.'); return; }
+  if(!pass||pass.length<6){ showAuthErr('register-err2','La contraseña debe tener al menos 6 caracteres.'); return; }
+  if(!regJugadores.length){ showAuthErr('register-err2','No hay jugadores verificados.'); return; }
   $('btn-register').disabled=true;
   try{
-    await fbAuth.createUserWithEmailAndPassword(email,pass);
-    // El vínculo de los RUT del apoderado se hace solo al cargar tras el login (onAuthStateChanged).
-  }
-  catch(e){ showAuthErr('register-err',fbErr(e.code)); }
+    const cred = await fbAuth.createUserWithEmailAndPassword(email,pass);
+    const rutsStr = regJugadores.map(j=>j.rut).join('|');
+    await cred.user.updateProfile({displayName:rutsStr});
+    saveRut(email,rutsStr);
+  }catch(e){ showAuthErr('register-err2',fbErr(e.code)); }
   $('btn-register').disabled=false;
 }
 async function doResetPass(){
